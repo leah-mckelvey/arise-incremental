@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useGameStore } from '../store/gameStore';
 import type { Resources, Building } from '../store/gameStore';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 // Query keys
 export const queryKeys = {
@@ -92,27 +92,31 @@ export const useAllResourceRatesQuery = () => {
   const queryClient = useQueryClient();
   const buildings = useGameStore((state) => state.buildings);
 
-  const rates: Record<keyof Resources, number> = {
-    catnip: 0,
-    wood: 0,
-    minerals: 0,
-    science: 0,
-  };
+  const rates = useMemo(() => {
+    const result: Record<keyof Resources, number> = {
+      catnip: 0,
+      wood: 0,
+      minerals: 0,
+      science: 0,
+    };
 
-  Object.values(buildings).forEach((building: Building) => {
-    if (building.produces && building.perSecond) {
-      Object.entries(building.produces).forEach(([resource, amount]) => {
-        if (amount) {
-          rates[resource as keyof Resources] +=
-            amount * building.count * building.perSecond!;
-        }
-      });
-    }
-  });
+    Object.values(buildings).forEach((building: Building) => {
+      if (building.produces && building.perSecond) {
+        Object.entries(building.produces).forEach(([resource, amount]) => {
+          if (amount) {
+            result[resource as keyof Resources] +=
+              amount * building.count * building.perSecond!;
+          }
+        });
+      }
+    });
+
+    return result;
+  }, [buildings]);
 
   useEffect(() => {
     queryClient.setQueryData(['allResourceRates'], rates);
-  }, [rates.catnip, rates.wood, rates.minerals, rates.science, queryClient]);
+  }, [rates, queryClient]);
 
   return useQuery({
     queryKey: ['allResourceRates'],
