@@ -110,6 +110,34 @@ const initialState = {
   lastUpdate: Date.now(),
 };
 
+// Deep merge helper to preserve new defaults when loading persisted state
+const deepMerge = <T extends Record<string, unknown>>(
+  target: T,
+  source: Partial<T>
+): T => {
+  const result = { ...target };
+
+  for (const key in source) {
+    const sourceValue = source[key];
+    const targetValue = target[key];
+
+    if (
+      sourceValue &&
+      typeof sourceValue === 'object' &&
+      !Array.isArray(sourceValue) &&
+      targetValue &&
+      typeof targetValue === 'object' &&
+      !Array.isArray(targetValue)
+    ) {
+      result[key] = deepMerge(targetValue as Record<string, unknown>, sourceValue as Record<string, unknown>) as T[Extract<keyof T, string>];
+    } else if (sourceValue !== undefined) {
+      result[key] = sourceValue as T[Extract<keyof T, string>];
+    }
+  }
+
+  return result;
+};
+
 // Load persisted state from localStorage
 const loadPersistedState = (): Partial<GameState> | null => {
   try {
@@ -135,9 +163,13 @@ const persistState = (state: GameState) => {
 export const gameStore = createStore<GameState>((set, get) => {
   const persisted = loadPersistedState();
 
+  // Deep merge persisted state with initial state to preserve new defaults
+  const mergedState = persisted
+    ? deepMerge(initialState, persisted)
+    : initialState;
+
   const store: GameState = {
-    ...initialState,
-    ...persisted,
+    ...mergedState,
 
     addResource: (resource: keyof Resources, amount: number) => {
       set((state) => ({
@@ -176,7 +208,8 @@ export const gameStore = createStore<GameState>((set, get) => {
     tick: () => {
       const state = get();
       const now = Date.now();
-      const deltaTime = (now - state.lastUpdate) / 1000; // Convert to seconds
+      // Ensure deltaTime is never negative (protects against clock skew or corrupted state)
+      const deltaTime = Math.max(0, (now - state.lastUpdate) / 1000); // Convert to seconds
 
       // Calculate resource generation
       const resourceGains: Resources = {
