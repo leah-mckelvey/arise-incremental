@@ -4,9 +4,19 @@ import type { Resources, Building } from '../store/gameStore';
 import { useMemo } from 'react';
 
 // Simplified hooks that directly use the store
+export const useHunterQuery = () => {
+  const hunter = useStore(gameStore, (state) => state.hunter);
+  return { data: hunter };
+};
+
 export const useResourcesQuery = () => {
   const resources = useStore(gameStore, (state) => state.resources);
   return { data: resources };
+};
+
+export const useResourceCapsQuery = () => {
+  const resourceCaps = useStore(gameStore, (state) => state.resourceCaps);
+  return { data: resourceCaps };
 };
 
 export const useBuildingsQuery = () => {
@@ -39,10 +49,13 @@ export const useAllResourceRatesQuery = () => {
 
   const rates = useMemo(() => {
     const result: Record<keyof Resources, number> = {
-      catnip: 0,
-      wood: 0,
-      minerals: 0,
-      science: 0,
+      essence: 0,
+      crystals: 0,
+      gold: 0,
+      souls: 0,
+      attraction: 0,
+      gems: 0,
+      knowledge: 0,
     };
 
     Object.values(buildings).forEach((building: Building) => {
@@ -60,4 +73,9 @@ export const useAllResourceRatesQuery = () => {
   }, [buildings]);
 
   return { data: rates };
+};
+
+export const useResearchQuery = () => {
+  const research = useStore(gameStore, (state) => state.research);
+  return { data: research };
 };

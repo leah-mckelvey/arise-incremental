@@ -10,58 +10,62 @@ describe('GatheringActions', () => {
 
   it('should render gathering buttons', () => {
     render(<GatheringActions />);
-    
-    expect(screen.getByText(/Gather Catnip/i)).toBeInTheDocument();
-    expect(screen.getByText(/Chop Wood/i)).toBeInTheDocument();
-    expect(screen.getByText(/Mine Minerals/i)).toBeInTheDocument();
+
+    expect(screen.getByText(/Gather Essence/i)).toBeInTheDocument();
+    expect(screen.getByText(/Mine Crystals/i)).toBeInTheDocument();
+    expect(screen.getByText(/Collect Gold/i)).toBeInTheDocument();
   });
 
-  it('should add catnip when gather button is clicked', () => {
+  it('should add essence when gather button is clicked', () => {
     render(<GatheringActions />);
-    
-    const initialCatnip = gameStore.getState().resources.catnip;
-    
-    const gatherButton = screen.getByText(/Gather Catnip/i);
+
+    const initialEssence = gameStore.getState().resources.essence;
+
+    const gatherButton = screen.getByText(/Gather Essence/i);
     fireEvent.click(gatherButton);
-    
-    const newCatnip = gameStore.getState().resources.catnip;
-    expect(newCatnip).toBe(initialCatnip + 1);
+
+    const newEssence = gameStore.getState().resources.essence;
+    // Base amount (1) + INT bonus (5 * 0.1 = 0) = 1
+    expect(newEssence).toBe(initialEssence + 1);
   });
 
-  it('should add wood when chop button is clicked', () => {
+  it('should add crystals when mine button is clicked', () => {
     render(<GatheringActions />);
-    
-    const initialWood = gameStore.getState().resources.wood;
-    
-    const chopButton = screen.getByText(/Chop Wood/i);
-    fireEvent.click(chopButton);
-    
-    const newWood = gameStore.getState().resources.wood;
-    expect(newWood).toBe(initialWood + 1);
-  });
 
-  it('should add minerals when mine button is clicked', () => {
-    render(<GatheringActions />);
-    
-    const initialMinerals = gameStore.getState().resources.minerals;
-    
-    const mineButton = screen.getByText(/Mine Minerals/i);
+    const initialCrystals = gameStore.getState().resources.crystals;
+
+    const mineButton = screen.getByText(/Mine Crystals/i);
     fireEvent.click(mineButton);
-    
-    const newMinerals = gameStore.getState().resources.minerals;
-    expect(newMinerals).toBe(initialMinerals + 1);
+
+    const newCrystals = gameStore.getState().resources.crystals;
+    // Base amount (1) + AGI bonus (5 * 0.1 = 0) = 1
+    expect(newCrystals).toBe(initialCrystals + 1);
+  });
+
+  it('should add gold when collect button is clicked', () => {
+    render(<GatheringActions />);
+
+    const initialGold = gameStore.getState().resources.gold;
+
+    const collectButton = screen.getByText(/Collect Gold/i);
+    fireEvent.click(collectButton);
+
+    const newGold = gameStore.getState().resources.gold;
+    // Base amount (1) + STR bonus (5 * 0.1 = 0) = 1
+    expect(newGold).toBe(initialGold + 1);
   });
 
   it('should accumulate resources with multiple clicks', () => {
     render(<GatheringActions />);
-    
-    const gatherButton = screen.getByText(/Gather Catnip/i);
-    
+
+    const gatherButton = screen.getByText(/Gather Essence/i);
+
     fireEvent.click(gatherButton);
     fireEvent.click(gatherButton);
     fireEvent.click(gatherButton);
-    
-    expect(gameStore.getState().resources.catnip).toBe(3);
+
+    // 3 clicks * 1 essence per click = 3
+    expect(gameStore.getState().resources.essence).toBe(3);
   });
 });
 
