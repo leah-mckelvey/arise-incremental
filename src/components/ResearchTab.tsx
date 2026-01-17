@@ -1,5 +1,5 @@
 import { useResearchQuery, useResourcesQuery } from '../queries/gameQueries';
-import { gameStore } from '../store/gameStore';
+import { purchaseResearch } from '../store/gameStore';
 import { Box, Heading, Text, Button, Stack } from '@ts-query/ui-react';
 
 export const ResearchTab = () => {
@@ -7,8 +7,6 @@ export const ResearchTab = () => {
   const { data: resources } = useResourcesQuery();
 
   if (!research || !resources) return null;
-
-  const purchaseResearch = gameStore.getState().purchaseResearch;
 
   const canResearch = (researchId: string): boolean => {
     const tech = research[researchId];

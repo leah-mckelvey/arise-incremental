@@ -1,11 +1,10 @@
 import { useHunterQuery } from '../queries/gameQueries';
-import { gameStore } from '../store/gameStore';
-import type { HunterStats } from '../store/gameStore';
+import { allocateStat } from '../store/gameStore';
+import type { HunterStats } from '../store/types';
 import { Box, Heading, Text, Button, Stack } from '@ts-query/ui-react';
 
 export const HunterDisplay = () => {
   const { data: hunter } = useHunterQuery();
-  const allocateStat = gameStore.getState().allocateStat;
 
   if (!hunter) return null;
 

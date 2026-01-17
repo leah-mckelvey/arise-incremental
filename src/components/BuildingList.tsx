@@ -1,5 +1,5 @@
 import { useBuildingsQuery, useResourcesQuery, useResearchQuery } from '../queries/gameQueries';
-import { gameStore, getBuildingCost, canAffordBuilding } from '../store/gameStore';
+import { getBuildingCost, canAffordBuilding, purchaseBuilding } from '../store/gameStore';
 import type { Resources, Building } from '../store/gameStore';
 import { Box, Heading, Button, Text, Stack } from '@ts-query/ui-react';
 import { OwnedBadge } from './OwnedBadge';
@@ -8,8 +8,6 @@ export const BuildingList = () => {
   const { data: buildings } = useBuildingsQuery();
   const { data: resources } = useResourcesQuery();
   const { data: research } = useResearchQuery();
-  // Get the purchaseBuilding function directly from the store
-  const purchaseBuilding = gameStore.getState().purchaseBuilding;
 
   if (!buildings || !resources || !research) return null;
 

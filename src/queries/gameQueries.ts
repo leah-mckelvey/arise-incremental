@@ -1,11 +1,11 @@
 import { useStore } from '@ts-query/react';
-import { gameStore } from '../store/gameStore';
+import { gameStore, useBuildingsStore, useResearchStore, useHunterStore } from '../store/gameStore';
 import type { Resources, Building } from '../store/gameStore';
 import { useMemo } from 'react';
 
-// Simplified hooks that directly use the store
+// Simplified hooks that directly use the substores
 export const useHunterQuery = () => {
-  const hunter = useStore(gameStore, (state) => state.hunter);
+  const hunter = useStore(useHunterStore, (state) => state.hunter);
   return { data: hunter };
 };
 
@@ -20,17 +20,17 @@ export const useResourceCapsQuery = () => {
 };
 
 export const useBuildingsQuery = () => {
-  const buildings = useStore(gameStore, (state) => state.buildings);
+  const buildings = useStore(useBuildingsStore, (state) => state.buildings);
   return { data: buildings };
 };
 
 export const useBuildingQuery = (buildingId: string) => {
-  const building = useStore(gameStore, (state) => state.buildings[buildingId]);
+  const building = useStore(useBuildingsStore, (state) => state.buildings[buildingId]);
   return { data: building };
 };
 
 export const useResourceRateQuery = (resource: keyof Resources) => {
-  const buildings = useStore(gameStore, (state) => state.buildings);
+  const buildings = useStore(useBuildingsStore, (state) => state.buildings);
 
   const rate = useMemo(() => {
     return Object.values(buildings).reduce((acc, building: Building) => {
@@ -45,7 +45,7 @@ export const useResourceRateQuery = (resource: keyof Resources) => {
 };
 
 export const useAllResourceRatesQuery = () => {
-  const buildings = useStore(gameStore, (state) => state.buildings);
+  const buildings = useStore(useBuildingsStore, (state) => state.buildings);
 
   const rates = useMemo(() => {
     const result: Record<keyof Resources, number> = {
@@ -76,6 +76,6 @@ export const useAllResourceRatesQuery = () => {
 };
 
 export const useResearchQuery = () => {
-  const research = useStore(gameStore, (state) => state.research);
+  const research = useStore(useResearchStore, (state) => state.research);
   return { data: research };
 };

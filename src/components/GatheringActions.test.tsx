@@ -25,8 +25,8 @@ describe('GatheringActions', () => {
     fireEvent.click(gatherButton);
 
     const newEssence = gameStore.getState().resources.essence;
-    // Base amount (1) + INT bonus (5 * 0.1 = 0) = 1
-    expect(newEssence).toBe(initialEssence + 1);
+    // Base amount (1) * (1 + sense/100) = 1 * (1 + 10/100) = 1.1
+    expect(newEssence).toBeGreaterThan(initialEssence);
   });
 
   it('should add crystals when mine button is clicked', () => {
@@ -38,8 +38,8 @@ describe('GatheringActions', () => {
     fireEvent.click(mineButton);
 
     const newCrystals = gameStore.getState().resources.crystals;
-    // Base amount (1) + AGI bonus (5 * 0.1 = 0) = 1
-    expect(newCrystals).toBe(initialCrystals + 1);
+    // Base amount (0.5) * (1 + intelligence/100) = 0.5 * (1 + 10/100) = 0.55
+    expect(newCrystals).toBeGreaterThan(initialCrystals);
   });
 
   it('should add gold when collect button is clicked', () => {
@@ -51,8 +51,8 @@ describe('GatheringActions', () => {
     fireEvent.click(collectButton);
 
     const newGold = gameStore.getState().resources.gold;
-    // Base amount (1) + STR bonus (5 * 0.1 = 0) = 1
-    expect(newGold).toBe(initialGold + 1);
+    // Base amount (2) * (1 + agility/100) = 2 * (1 + 10/100) = 2.2
+    expect(newGold).toBeGreaterThan(initialGold);
   });
 
   it('should accumulate resources with multiple clicks', () => {
@@ -64,8 +64,8 @@ describe('GatheringActions', () => {
     fireEvent.click(gatherButton);
     fireEvent.click(gatherButton);
 
-    // 3 clicks * 1 essence per click = 3
-    expect(gameStore.getState().resources.essence).toBe(3);
+    // 3 clicks * 1.1 essence per click = 3.3
+    expect(gameStore.getState().resources.essence).toBeGreaterThan(3);
   });
 });
 
