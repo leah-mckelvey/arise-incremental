@@ -134,10 +134,103 @@ export const calculateGlobalProductionMultiplier = (
 };
 
 /**
+ * Calculate building efficiency multiplier from research
+ */
+export const calculateBuildingEfficiency = (
+  buildingId: string,
+  research: Record<string, Research>
+): number => {
+  let efficiency = 1.0;
+
+  const researchedTechs = Object.values(research).filter(r => r.researched);
+  researchedTechs.forEach(tech => {
+    if (tech.effects?.buildingEfficiency?.[buildingId]) {
+      efficiency *= tech.effects.buildingEfficiency[buildingId];
+    }
+  });
+
+  return efficiency;
+};
+
+/**
+ * Calculate synergy multiplier for a specific building
+ */
+export const calculateBuildingSynergy = (
+  buildingId: string,
+  buildings: Record<string, Building>,
+  research: Record<string, Research>
+): number => {
+  let synergy = 1.0;
+
+  // Mana Resonance: Essence Extractors gain +25% per Crystal Mine
+  if (buildingId === 'essenceExtractor' && research.manaResonance?.researched) {
+    const crystalMines = buildings.crystalMine?.count || 0;
+    synergy *= (1 + crystalMines * 0.25);
+  }
+
+  // Crystal Synergy: Crystal Mines gain +10% per Essence Vault
+  if (buildingId === 'crystalMine' && research.crystalSynergy?.researched) {
+    const essenceVaults = buildings.essenceVault?.count || 0;
+    synergy *= (1 + essenceVaults * 0.1);
+  }
+
+  // Guild Network: Hunter Guilds gain +5% per other Hunter Guild
+  if (buildingId === 'hunterGuild' && research.guildNetwork?.researched) {
+    const guildCount = buildings.hunterGuild?.count || 0;
+    synergy *= (1 + (guildCount - 1) * 0.05);
+  }
+
+  return synergy;
+};
+
+/**
+ * Calculate knowledge production from training grounds
+ */
+export const calculateKnowledgeProduction = (
+  buildings: Record<string, Building>,
+  research: Record<string, Research>,
+  deltaTime: number
+): number => {
+  let knowledgeProduction = 0;
+
+  const trainingGround = buildings.trainingGround;
+  if (trainingGround && research.knowledgeGeneration?.researched) {
+    knowledgeProduction = trainingGround.count * 0.1 * deltaTime;
+
+    // Compounded Learning: Each Training Ground increases knowledge production by 10%
+    if (research.compoundedLearning?.researched) {
+      knowledgeProduction *= Math.pow(1.1, trainingGround.count);
+    }
+  }
+
+  return knowledgeProduction;
+};
+
+/**
+ * Calculate XP gain from buildings
+ */
+export const calculateBuildingXpGain = (
+  buildings: Record<string, Building>,
+  deltaTime: number
+): number => {
+  let xpGain = 0;
+
+  Object.values(buildings).forEach((building) => {
+    if (building.xpPerSecond) {
+      xpGain += building.count * building.xpPerSecond * deltaTime;
+    }
+  });
+
+  return xpGain;
+};
+
+/**
  * Calculate resource production from buildings over time
+ * This is a comprehensive function that applies all bonuses and synergies
  */
 export const calculateBuildingProduction = (
   buildings: Record<string, Building>,
+  research: Record<string, Research>,
   deltaTime: number,
   globalMultiplier: number
 ): Resources => {
@@ -148,7 +241,17 @@ export const calculateBuildingProduction = (
       (Object.keys(building.produces) as Array<keyof Resources>).forEach((resource) => {
         const amount = building.produces![resource];
         if (amount) {
-          const production = amount * building.count * building.perSecond * deltaTime * globalMultiplier;
+          let production = amount * building.count * building.perSecond! * deltaTime;
+
+          // Apply building efficiency bonuses from research
+          production *= calculateBuildingEfficiency(building.id, research);
+
+          // Apply synergy bonuses
+          production *= calculateBuildingSynergy(building.id, buildings, research);
+
+          // Apply global multiplier
+          production *= globalMultiplier;
+
           gains[resource] = (gains[resource] || 0) + production;
         }
       });
@@ -156,5 +259,32 @@ export const calculateBuildingProduction = (
   });
 
   return gains as Resources;
+};
+
+/**
+ * Calculate all resource and XP gains for a tick
+ * This is the main orchestration function for tick calculations
+ */
+export const calculateTickGains = (
+  buildings: Record<string, Building>,
+  research: Record<string, Research>,
+  resources: Resources,
+  hunterLevel: number,
+  deltaTime: number
+): { resourceGains: Resources; xpGain: number } => {
+  // Calculate global production multiplier
+  const globalMultiplier = calculateGlobalProductionMultiplier(research, resources, hunterLevel);
+
+  // Calculate resource production from buildings
+  const resourceGains = calculateBuildingProduction(buildings, research, deltaTime, globalMultiplier);
+
+  // Add knowledge production from training grounds
+  const knowledgeProduction = calculateKnowledgeProduction(buildings, research, deltaTime);
+  resourceGains.knowledge = (resourceGains.knowledge || 0) + knowledgeProduction;
+
+  // Calculate XP gain from buildings
+  const xpGain = calculateBuildingXpGain(buildings, deltaTime);
+
+  return { resourceGains, xpGain };
 };
 

@@ -7,7 +7,7 @@ import {
   calculateResourceCaps,
   calculateGatherAmount,
   calculateGatherXp,
-  calculateGlobalProductionMultiplier
+  calculateTickGains
 } from '../lib/calculations/resourceCalculations';
 import { deductCost } from '../lib/calculations/buildingCalculations';
 import { baseResourceCaps } from '../data/initialHunter';
@@ -150,71 +150,17 @@ export const gameStore = createStore<GameState>((set, get) => {
           const buildings = useBuildingsStore.getState().buildings;
           const research = useResearchStore.getState().research;
           const hunter = useHunterStore.getState().hunter;
-          const researchedTechs = Object.values(research).filter(r => r.researched);
 
-          // Calculate global multipliers using calculation library
-          const globalProductionMultiplier = calculateGlobalProductionMultiplier(
+          // Use calculation library to compute all gains
+          const { resourceGains, xpGain } = calculateTickGains(
+            buildings,
             research,
             state.resources,
-            hunter.level
+            hunter.level,
+            deltaTime
           );
 
-          const resourceGains: Resources = createResources();
-          let xpGain = 0;
-
-          // Add production from buildings
-          Object.values(buildings).forEach((building) => {
-            if (building.produces && building.perSecond) {
-              (Object.keys(building.produces) as Array<keyof Resources>).forEach((resource) => {
-                const amount = building.produces![resource];
-                if (amount) {
-                  let production = amount * building.count * building.perSecond! * deltaTime;
-
-                  // Apply building efficiency bonuses
-                  researchedTechs.forEach(tech => {
-                    if (tech.effects?.buildingEfficiency?.[building.id]) {
-                      production *= tech.effects.buildingEfficiency[building.id];
-                    }
-                  });
-
-                  // Apply synergies
-                  if (building.id === 'essenceExtractor' && research.manaResonance?.researched) {
-                    const crystalMines = buildings.crystalMine?.count || 0;
-                    production *= (1 + crystalMines * 0.25);
-                  }
-
-                  if (building.id === 'crystalMine' && research.crystalSynergy?.researched) {
-                    const essenceVaults = buildings.essenceVault?.count || 0;
-                    production *= (1 + essenceVaults * 0.1);
-                  }
-
-                  if (building.id === 'hunterGuild' && research.guildNetwork?.researched) {
-                    const guildCount = buildings.hunterGuild?.count || 0;
-                    production *= (1 + (guildCount - 1) * 0.05);
-                  }
-
-                  production *= globalProductionMultiplier;
-                  resourceGains[resource as keyof Resources] += production;
-                }
-              });
-            }
-
-            if (building.xpPerSecond) {
-              xpGain += building.count * building.xpPerSecond * deltaTime;
-            }
-
-            // Knowledge generation
-            if (building.id === 'trainingGround' && research.knowledgeGeneration?.researched) {
-              let knowledgeProduction = building.count * 0.1 * deltaTime;
-
-              if (research.compoundedLearning?.researched) {
-                knowledgeProduction *= Math.pow(1.1, building.count);
-              }
-
-              resourceGains.knowledge += knowledgeProduction;
-            }
-          });
-
+          // Apply resource gains with caps
           set((state) => ({
             resources: createResources({
               essence: Math.min(state.resourceCaps.essence, state.resources.essence + resourceGains.essence),
@@ -228,6 +174,7 @@ export const gameStore = createStore<GameState>((set, get) => {
             lastUpdate: now,
           }));
 
+          // Apply XP gain and recalculate caps on level up
           if (xpGain > 0) {
             useHunterStore.getState().addXp(xpGain, (newLevel) => {
               const buildings = useBuildingsStore.getState().buildings;
