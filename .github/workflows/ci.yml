@@ -48,14 +48,17 @@ jobs:
               run: npm ci
 
             - name: Link ts-query packages
-              continue-on-error: true
               run: |
-                  if [ -d "../ts-query/packages/core" ]; then
-                    npm link ../ts-query/packages/core
-                    npm link ../ts-query/packages/react
-                    npm link ../ts-query/packages/ui-react
+                  if [ -d "ts-query/packages/core" ]; then
+                    cd ts-query/packages/core && npm link && cd ../../..
+                    cd ts-query/packages/react && npm link && cd ../../..
+                    cd ts-query/packages/ui-react && npm link && cd ../../..
+                    npm link @ts-query/core
+                    npm link @ts-query/react
+                    npm link @ts-query/ui-react
+                    echo "✅ ts-query packages linked successfully"
                   else
-                    echo "⚠️  ts-query packages not found - tests may fail"
+                    echo "⚠️  ts-query packages not found - skipping link"
                   fi
 
             - name: Type check
@@ -108,14 +111,17 @@ jobs:
               run: npm ci
 
             - name: Link ts-query packages
-              continue-on-error: true
               run: |
-                  if [ -d "../ts-query/packages/core" ]; then
-                    npm link ../ts-query/packages/core
-                    npm link ../ts-query/packages/react
-                    npm link ../ts-query/packages/ui-react
+                  if [ -d "ts-query/packages/core" ]; then
+                    cd ts-query/packages/core && npm link && cd ../../..
+                    cd ts-query/packages/react && npm link && cd ../../..
+                    cd ts-query/packages/ui-react && npm link && cd ../../..
+                    npm link @ts-query/core
+                    npm link @ts-query/react
+                    npm link @ts-query/ui-react
+                    echo "✅ ts-query packages linked successfully"
                   else
-                    echo "⚠️  ts-query packages not found - tests may fail"
+                    echo "⚠️  ts-query packages not found - skipping link"
                   fi
 
             - name: Run full validation
