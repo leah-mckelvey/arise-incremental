@@ -1,0 +1,108 @@
+import type { Building } from '../store/buildingsStore';
+import type { Resources } from '../store/types';
+
+// Helper to create full Resources object with defaults
+const createResources = (partial: Partial<Resources> = {}): Resources => {
+  return {
+    essence: 0,
+    crystals: 0,
+    gold: 0,
+    souls: 0,
+    attraction: 0,
+    gems: 0,
+    knowledge: 0,
+    ...partial,
+  };
+};
+
+export const initialBuildings: Record<string, Building> = {
+  essenceExtractor: {
+    id: 'essenceExtractor',
+    name: '⚗️ Essence Extractor',
+    description: 'Automatically extracts essence from the environment',
+    count: 0,
+    baseCost: createResources({ essence: 10 }),
+    costMultiplier: 1.15,
+    produces: { essence: 1 },
+    perSecond: 0.1,
+  },
+  trainingGround: {
+    id: 'trainingGround',
+    name: '🏋️ Training Ground',
+    description: 'Provides passive XP gain for your hunter',
+    count: 0,
+    baseCost: createResources({ essence: 50, gold: 25 }),
+    costMultiplier: 1.15,
+    xpPerSecond: 0.5,
+  },
+  hunterGuild: {
+    id: 'hunterGuild',
+    name: '🏛️ Hunter Guild',
+    description: 'Generates attraction for recruiting allies',
+    count: 0,
+    baseCost: createResources({ crystals: 200, gold: 250 }),
+    costMultiplier: 1.15,
+    produces: { attraction: 1 },
+    perSecond: 0.1,
+  },
+  mageTower: {
+    id: 'mageTower',
+    name: '🗼 Mage Tower',
+    description: 'Produces rare gems through arcane rituals',
+    count: 0,
+    baseCost: createResources({ essence: 200, crystals: 100 }),
+    costMultiplier: 1.15,
+    produces: { gems: 1 },
+    perSecond: 0.05,
+  },
+  crystalMine: {
+    id: 'crystalMine',
+    name: '💎 Crystal Mine',
+    description: 'Extracts valuable crystals from dungeon depths',
+    count: 0,
+    baseCost: createResources({ essence: 100 }),
+    costMultiplier: 1.15,
+    produces: { crystals: 1 },
+    perSecond: 0.2,
+  },
+  // Storage buildings
+  essenceVault: {
+    id: 'essenceVault',
+    name: '📦 Essence Vault',
+    description: 'Increases essence storage capacity',
+    count: 0,
+    baseCost: createResources({ essence: 50 }),
+    costMultiplier: 1.12,
+    increasesCaps: { essence: 50 },
+  },
+  crystalWarehouse: {
+    id: 'crystalWarehouse',
+    name: '🏪 Crystal Warehouse',
+    description: 'Increases crystal storage capacity',
+    count: 0,
+    baseCost: createResources({ essence: 75, crystals: 25 }),
+    costMultiplier: 1.12,
+    increasesCaps: { crystals: 25 },
+  },
+  goldVault: {
+    id: 'goldVault',
+    name: '🏦 Gold Vault',
+    description: 'Increases gold storage capacity',
+    count: 0,
+    baseCost: createResources({ essence: 100, gold: 50 }),
+    costMultiplier: 1.12,
+    increasesCaps: { gold: 100 },
+  },
+  // Advanced buildings (unlocked by research)
+  soulHarvester: {
+    id: 'soulHarvester',
+    name: '👻 Soul Harvester',
+    description: 'Harvests souls from defeated enemies. Each soul boosts all production by 1%',
+    count: 0,
+    baseCost: createResources({ essence: 500, crystals: 200, gold: 300 }),
+    costMultiplier: 1.2,
+    produces: { souls: 1 },
+    perSecond: 0.05,
+  },
+};
+

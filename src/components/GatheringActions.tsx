@@ -9,10 +9,15 @@ export const GatheringActions = () => {
 
   if (!hunter) return null;
 
-  // Calculate stat bonuses for display
-  const essenceBonus = Math.floor(hunter.stats.intelligence * 0.1);
-  const crystalsBonus = Math.floor(hunter.stats.agility * 0.1);
-  const goldBonus = Math.floor(hunter.stats.strength * 0.1);
+  // Calculate stat bonuses for display (matching actual calculation logic)
+  const essenceAmount = (1 * (1 + hunter.stats.sense / 100)).toFixed(1);
+  const crystalsAmount = (0.5 * (1 + hunter.stats.intelligence / 100)).toFixed(1);
+  const goldAmount = (2 * (1 + hunter.stats.agility / 100)).toFixed(1);
+
+  // XP calculation: 0.1 * (1 + stat / 200)
+  const essenceXp = (0.1 * (1 + hunter.stats.sense / 200)).toFixed(2);
+  const crystalsXp = (0.1 * (1 + hunter.stats.intelligence / 200)).toFixed(2);
+  const goldXp = (0.1 * (1 + hunter.stats.agility / 200)).toFixed(2);
 
   return (
     <Box
@@ -43,7 +48,7 @@ export const GatheringActions = () => {
           >
             🔮 Gather Essence
             <br />
-            <span style={{ fontSize: '12px', opacity: 0.9 }}>+{1 + essenceBonus} | +5 XP</span>
+            <span style={{ fontSize: '12px', opacity: 0.9 }}>+{essenceAmount} | +{essenceXp} XP</span>
           </Button>
           <Text
             fontSize="11px"
@@ -53,7 +58,7 @@ export const GatheringActions = () => {
               textAlign: 'center',
             }}
           >
-            🧠 INT bonus: +{essenceBonus}
+            👁️ SENSE: {hunter.stats.sense}
           </Text>
         </Box>
 
@@ -71,7 +76,7 @@ export const GatheringActions = () => {
           >
             💎 Mine Crystals
             <br />
-            <span style={{ fontSize: '12px', opacity: 0.9 }}>+{1 + crystalsBonus} | +8 XP</span>
+            <span style={{ fontSize: '12px', opacity: 0.9 }}>+{crystalsAmount} | +{crystalsXp} XP</span>
           </Button>
           <Text
             fontSize="11px"
@@ -81,7 +86,7 @@ export const GatheringActions = () => {
               textAlign: 'center',
             }}
           >
-            ⚡ AGI bonus: +{crystalsBonus}
+            🧠 INT: {hunter.stats.intelligence}
           </Text>
         </Box>
 
@@ -99,7 +104,7 @@ export const GatheringActions = () => {
           >
             💰 Collect Gold
             <br />
-            <span style={{ fontSize: '12px', opacity: 0.9 }}>+{1 + goldBonus} | +12 XP</span>
+            <span style={{ fontSize: '12px', opacity: 0.9 }}>+{goldAmount} | +{goldXp} XP</span>
           </Button>
           <Text
             fontSize="11px"
@@ -109,7 +114,7 @@ export const GatheringActions = () => {
               textAlign: 'center',
             }}
           >
-            💪 STR bonus: +{goldBonus}
+            ⚡ AGI: {hunter.stats.agility}
           </Text>
         </Box>
       </Box>

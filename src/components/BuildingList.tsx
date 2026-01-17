@@ -89,7 +89,7 @@ export const BuildingList = () => {
           .filter((building) => isBuildingUnlocked(building.id))
           .map((building) => {
             const cost = getBuildingCost(building);
-            const canAfford = canAffordBuilding(resources, building);
+            const canAfford = canAffordBuilding(resources, cost);
 
             return (
             <Box

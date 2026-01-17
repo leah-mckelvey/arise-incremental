@@ -3,6 +3,14 @@ import type { Resources, ResourceCaps } from './types';
 import { useBuildingsStore, type Building } from './buildingsStore';
 import { useResearchStore, type Research } from './researchStore';
 import { useHunterStore } from './hunterStore';
+import {
+  calculateResourceCaps,
+  calculateGatherAmount,
+  calculateGatherXp,
+  calculateGlobalProductionMultiplier
+} from '../lib/calculations/resourceCalculations';
+import { deductCost } from '../lib/calculations/buildingCalculations';
+import { baseResourceCaps } from '../data/initialHunter';
 
 // Main game state (resources, caps, tick)
 export interface GameState {
@@ -35,67 +43,9 @@ const createResources = (partial: Partial<Resources> = {}): Resources => {
 // Helper to create resource caps with defaults
 const createResourceCaps = (partial: Partial<ResourceCaps> = {}): ResourceCaps => {
   return {
-    essence: 100,
-    crystals: 50,
-    gold: 200,
-    souls: 10,
-    attraction: 25,
-    gems: 10,
-    knowledge: 100,
+    ...baseResourceCaps,
     ...partial,
   };
-};
-
-// Calculate total resource caps based on base caps + building bonuses + research
-export const calculateResourceCaps = (
-  buildings: Record<string, Building>,
-  research: Record<string, Research>,
-  hunterLevel: number = 1
-): ResourceCaps => {
-  const baseCaps = createResourceCaps();
-  const caps = { ...baseCaps };
-
-  // Add building cap increases
-  Object.values(buildings).forEach((building) => {
-    if (building.increasesCaps && building.count > 0) {
-      (Object.keys(building.increasesCaps) as Array<keyof ResourceCaps>).forEach((resource) => {
-        const increase = building.increasesCaps![resource];
-        if (increase) {
-          caps[resource] = caps[resource] + increase * building.count;
-        }
-      });
-    }
-  });
-  
-  // Apply research multipliers
-  const researchedTechs = Object.values(research).filter(r => r.researched);
-  researchedTechs.forEach(tech => {
-    if (tech.effects?.capMultiplier) {
-      Object.entries(tech.effects.capMultiplier).forEach(([resource, multiplier]) => {
-        if (multiplier) {
-          caps[resource as keyof ResourceCaps] *= multiplier;
-        }
-      });
-    }
-    
-    if (tech.effects?.capIncrease) {
-      Object.entries(tech.effects.capIncrease).forEach(([resource, increase]) => {
-        if (increase) {
-          caps[resource as keyof ResourceCaps] += increase;
-        }
-      });
-    }
-  });
-  
-  // Apply Transcendence: +10% caps per hunter level
-  if (research.transcendence?.researched) {
-    const levelMultiplier = 1 + (hunterLevel * 0.1);
-    Object.keys(caps).forEach((resource) => {
-      caps[resource as keyof ResourceCaps] *= levelMultiplier;
-    });
-  }
-
-  return caps;
 };
 
 // Current schema version
@@ -176,39 +126,18 @@ export const gameStore = createStore<GameState>((set, get) => {
           const hunter = useHunterStore.getState().hunter;
           const research = useResearchStore.getState().research;
 
-          const baseGatherAmounts: Record<typeof resource, number> = {
-            essence: 1,
-            crystals: 0.5,
-            gold: 2,
-          };
-
-          const statBonuses: Record<typeof resource, keyof typeof hunter.stats> = {
-            essence: 'sense',
-            crystals: 'intelligence',
-            gold: 'agility',
-          };
-
-          const baseStat = hunter.stats[statBonuses[resource]];
-          let amount = baseGatherAmounts[resource] * (1 + baseStat / 100);
-
-          // Apply research bonuses
-          const researchedTechs = Object.values(research).filter(r => r.researched);
-          researchedTechs.forEach(tech => {
-            if (tech.effects?.gatheringBonus?.[resource]) {
-              amount *= (1 + tech.effects.gatheringBonus[resource]!);
-            }
-          });
-
+          // Use calculation library for gathering
+          const amount = calculateGatherAmount(resource, hunter.stats, research);
           get().addResource(resource, amount);
 
           // Add XP for gathering
-          const xpGain = 0.1 * (1 + baseStat / 200);
+          const xpGain = calculateGatherXp(resource, hunter.stats);
           useHunterStore.getState().addXp(xpGain, (newLevel) => {
             // Recalculate caps when leveling up (for transcendence)
             const buildings = useBuildingsStore.getState().buildings;
             const research = useResearchStore.getState().research;
             set({
-              resourceCaps: calculateResourceCaps(buildings, research, newLevel),
+              resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, research, newLevel),
             });
           });
         },
@@ -223,21 +152,12 @@ export const gameStore = createStore<GameState>((set, get) => {
           const hunter = useHunterStore.getState().hunter;
           const researchedTechs = Object.values(research).filter(r => r.researched);
 
-          // Calculate global multipliers
-          let globalProductionMultiplier = 1.0;
-
-          if (research.shadowEconomy?.researched) {
-            globalProductionMultiplier *= (1 + state.resources.souls * 0.01);
-          }
-
-          if (research.knowledgeLoop?.researched) {
-            const knowledgeBonus = Math.floor(state.resources.knowledge / 100) * 0.05;
-            globalProductionMultiplier *= (1 + knowledgeBonus);
-          }
-
-          if (research.transcendence?.researched) {
-            globalProductionMultiplier *= (1 + hunter.level * 0.01);
-          }
+          // Calculate global multipliers using calculation library
+          const globalProductionMultiplier = calculateGlobalProductionMultiplier(
+            research,
+            state.resources,
+            hunter.level
+          );
 
           const resourceGains: Resources = createResources();
           let xpGain = 0;
@@ -313,7 +233,7 @@ export const gameStore = createStore<GameState>((set, get) => {
               const buildings = useBuildingsStore.getState().buildings;
               const research = useResearchStore.getState().research;
               set({
-                resourceCaps: calculateResourceCaps(buildings, research, newLevel),
+                resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, research, newLevel),
               });
             });
           }
@@ -326,12 +246,20 @@ export const gameStore = createStore<GameState>((set, get) => {
             lastUpdate: Date.now(),
           });
           persistState(get());
-          // Note: Substores handle their own reset via localStorage clear
+          // Reset all substores
+          useBuildingsStore.getState().reset();
+          useResearchStore.getState().reset();
+          useHunterStore.getState().reset();
         },
       };
 
       return store;
     });
+
+// Subscribe to state changes to persist automatically
+gameStore.subscribe((state) => {
+  persistState(state);
+});
 
 // Coordinated purchase functions that update multiple stores
 export const purchaseBuilding = (buildingId: string) => {
@@ -340,18 +268,10 @@ export const purchaseBuilding = (buildingId: string) => {
   const hunter = useHunterStore.getState().hunter;
 
   useBuildingsStore.getState().purchaseBuilding(buildingId, resources, (cost, newBuildings) => {
-    // Deduct resources
+    // Deduct resources using calculation library
     gameStore.setState({
-      resources: createResources({
-        essence: resources.essence - cost.essence,
-        crystals: resources.crystals - cost.crystals,
-        gold: resources.gold - cost.gold,
-        souls: resources.souls - cost.souls,
-        attraction: resources.attraction - cost.attraction,
-        gems: resources.gems - cost.gems,
-        knowledge: resources.knowledge - cost.knowledge,
-      }),
-      resourceCaps: calculateResourceCaps(newBuildings, research, hunter.level),
+      resources: deductCost(resources, cost),
+      resourceCaps: calculateResourceCaps(baseResourceCaps, newBuildings, research, hunter.level),
     });
   });
 };
@@ -368,7 +288,7 @@ export const purchaseResearch = (researchId: string) => {
         ...resources,
         knowledge: resources.knowledge - cost,
       }),
-      resourceCaps: calculateResourceCaps(buildings, newResearch, hunter.level),
+      resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, newResearch, hunter.level),
     });
   });
 };
