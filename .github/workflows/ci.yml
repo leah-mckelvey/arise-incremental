@@ -47,18 +47,13 @@ jobs:
             - name: Install dependencies
               run: npm ci
 
-            - name: Link ts-query packages
+            - name: Install ts-query packages from local
               run: |
                   if [ -d "ts-query/packages/core" ]; then
-                    cd ts-query/packages/core && npm link && cd ../../..
-                    cd ts-query/packages/react && npm link && cd ../../..
-                    cd ts-query/packages/ui-react && npm link && cd ../../..
-                    npm link @ts-query/core
-                    npm link @ts-query/react
-                    npm link @ts-query/ui-react
-                    echo "✅ ts-query packages linked successfully"
+                    npm install ./ts-query/packages/core ./ts-query/packages/react ./ts-query/packages/ui-react
+                    echo "✅ ts-query packages installed from local directories"
                   else
-                    echo "⚠️  ts-query packages not found - skipping link"
+                    echo "⚠️  ts-query packages not found - skipping install"
                   fi
 
             - name: Type check
@@ -110,18 +105,13 @@ jobs:
             - name: Install dependencies
               run: npm ci
 
-            - name: Link ts-query packages
+            - name: Install ts-query packages from local
               run: |
                   if [ -d "ts-query/packages/core" ]; then
-                    cd ts-query/packages/core && npm link && cd ../../..
-                    cd ts-query/packages/react && npm link && cd ../../..
-                    cd ts-query/packages/ui-react && npm link && cd ../../..
-                    npm link @ts-query/core
-                    npm link @ts-query/react
-                    npm link @ts-query/ui-react
-                    echo "✅ ts-query packages linked successfully"
+                    npm install ./ts-query/packages/core ./ts-query/packages/react ./ts-query/packages/ui-react
+                    echo "✅ ts-query packages installed from local directories"
                   else
-                    echo "⚠️  ts-query packages not found - skipping link"
+                    echo "⚠️  ts-query packages not found - skipping install"
                   fi
 
             - name: Run full validation
