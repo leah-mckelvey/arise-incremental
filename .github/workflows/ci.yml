@@ -27,25 +27,36 @@ jobs:
 
             - name: Checkout ts-query monorepo
               uses: actions/checkout@v4
+              continue-on-error: true
               with:
                   repository: ${{ github.repository_owner }}/ts-query
                   path: ts-query
 
             - name: Build ts-query packages
+              continue-on-error: true
               run: |
-                  cd ts-query
-                  npm install
-                  npm run build
-                  cd ..
+                  if [ -d "ts-query" ]; then
+                    cd ts-query
+                    npm install
+                    npm run build
+                    cd ..
+                  else
+                    echo "⚠️  ts-query repo not found - skipping build"
+                  fi
 
             - name: Install dependencies
               run: npm ci
 
             - name: Link ts-query packages
+              continue-on-error: true
               run: |
-                  npm link ../ts-query/packages/core
-                  npm link ../ts-query/packages/react
-                  npm link ../ts-query/packages/ui-react
+                  if [ -d "../ts-query/packages/core" ]; then
+                    npm link ../ts-query/packages/core
+                    npm link ../ts-query/packages/react
+                    npm link ../ts-query/packages/ui-react
+                  else
+                    echo "⚠️  ts-query packages not found - tests may fail"
+                  fi
 
             - name: Type check
               run: npm run typecheck
@@ -70,6 +81,7 @@ jobs:
 
             - name: Checkout ts-query monorepo
               uses: actions/checkout@v4
+              continue-on-error: true
               with:
                   repository: ${{ github.repository_owner }}/ts-query
                   path: ts-query
@@ -81,20 +93,30 @@ jobs:
                   cache: "npm"
 
             - name: Build ts-query packages
+              continue-on-error: true
               run: |
-                  cd ts-query
-                  npm install
-                  npm run build
-                  cd ..
+                  if [ -d "ts-query" ]; then
+                    cd ts-query
+                    npm install
+                    npm run build
+                    cd ..
+                  else
+                    echo "⚠️  ts-query repo not found - skipping build"
+                  fi
 
             - name: Install dependencies
               run: npm ci
 
             - name: Link ts-query packages
+              continue-on-error: true
               run: |
-                  npm link ../ts-query/packages/core
-                  npm link ../ts-query/packages/react
-                  npm link ../ts-query/packages/ui-react
+                  if [ -d "../ts-query/packages/core" ]; then
+                    npm link ../ts-query/packages/core
+                    npm link ../ts-query/packages/react
+                    npm link ../ts-query/packages/ui-react
+                  else
+                    echo "⚠️  ts-query packages not found - tests may fail"
+                  fi
 
             - name: Run full validation
               run: npm run validate
