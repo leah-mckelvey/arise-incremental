@@ -3,13 +3,14 @@ import type { Building } from '../../store/buildingsStore';
 import type { Research } from '../../store/researchStore';
 
 /**
- * Calculate total resource caps based on base caps + building bonuses + research effects
+ * Calculate total resource caps based on base caps + building bonuses + research effects + hunter stats
  */
 export const calculateResourceCaps = (
   baseCaps: ResourceCaps,
   buildings: Record<string, Building>,
   research: Record<string, Research>,
-  hunterLevel: number = 1
+  hunterLevel: number = 1,
+  hunterStats?: HunterStats
 ): ResourceCaps => {
   const caps = { ...baseCaps };
 
@@ -24,7 +25,7 @@ export const calculateResourceCaps = (
       });
     }
   });
-  
+
   // Apply research multipliers
   const researchedTechs = Object.values(research).filter(r => r.researched);
   researchedTechs.forEach(tech => {
@@ -35,7 +36,7 @@ export const calculateResourceCaps = (
         }
       });
     }
-    
+
     if (tech.effects?.capIncrease) {
       Object.entries(tech.effects.capIncrease).forEach(([resource, increase]) => {
         if (increase) {
@@ -44,13 +45,27 @@ export const calculateResourceCaps = (
       });
     }
   });
-  
+
   // Apply Transcendence: +10% caps per hunter level
   if (research.transcendence?.researched) {
     const levelMultiplier = 1 + (hunterLevel * 0.1);
     Object.keys(caps).forEach((resource) => {
       caps[resource as keyof ResourceCaps] *= levelMultiplier;
     });
+  }
+
+  // Apply hunter stat bonuses to caps (Sung Jinwoo as force multiplier)
+  // Each stat point gives +1% to its associated resource cap
+  if (hunterStats) {
+    caps.essence *= (1 + hunterStats.strength / 100);
+    caps.crystals *= (1 + hunterStats.sense / 100);
+    caps.gold *= (1 + hunterStats.agility / 100);
+    caps.souls *= (1 + hunterStats.vitality / 100);
+    caps.knowledge *= (1 + hunterStats.intelligence / 100);
+    // Attraction and gems scale with average of all stats
+    const avgStat = (hunterStats.strength + hunterStats.agility + hunterStats.intelligence + hunterStats.vitality + hunterStats.sense) / 5;
+    caps.attraction *= (1 + avgStat / 100);
+    caps.gems *= (1 + avgStat / 100);
   }
 
   return caps;
@@ -232,9 +247,18 @@ export const calculateBuildingProduction = (
   buildings: Record<string, Building>,
   research: Record<string, Research>,
   deltaTime: number,
-  globalMultiplier: number
+  globalMultiplier: number,
+  hunterStats?: HunterStats
 ): Resources => {
-  const gains: Partial<Resources> = {};
+  const gains: Resources = {
+    essence: 0,
+    crystals: 0,
+    gold: 0,
+    souls: 0,
+    attraction: 0,
+    gems: 0,
+    knowledge: 0,
+  };
 
   Object.values(buildings).forEach((building) => {
     if (building.produces && building.perSecond) {
@@ -252,13 +276,33 @@ export const calculateBuildingProduction = (
           // Apply global multiplier
           production *= globalMultiplier;
 
-          gains[resource] = (gains[resource] || 0) + production;
+          // Apply hunter stat bonuses (Sung Jinwoo as force multiplier)
+          // Each stat point gives +0.5% to its associated resource production
+          if (hunterStats) {
+            if (resource === 'essence') {
+              production *= (1 + hunterStats.strength / 200);
+            } else if (resource === 'crystals') {
+              production *= (1 + hunterStats.sense / 200);
+            } else if (resource === 'gold') {
+              production *= (1 + hunterStats.agility / 200);
+            } else if (resource === 'souls') {
+              production *= (1 + hunterStats.vitality / 200);
+            } else if (resource === 'knowledge') {
+              production *= (1 + hunterStats.intelligence / 200);
+            } else {
+              // Attraction and gems scale with average of all stats
+              const avgStat = (hunterStats.strength + hunterStats.agility + hunterStats.intelligence + hunterStats.vitality + hunterStats.sense) / 5;
+              production *= (1 + avgStat / 200);
+            }
+          }
+
+          gains[resource] = gains[resource] + production;
         }
       });
     }
   });
 
-  return gains as Resources;
+  return gains;
 };
 
 /**
@@ -270,13 +314,14 @@ export const calculateTickGains = (
   research: Record<string, Research>,
   resources: Resources,
   hunterLevel: number,
-  deltaTime: number
+  deltaTime: number,
+  hunterStats?: HunterStats
 ): { resourceGains: Resources; xpGain: number } => {
   // Calculate global production multiplier
   const globalMultiplier = calculateGlobalProductionMultiplier(research, resources, hunterLevel);
 
   // Calculate resource production from buildings
-  const resourceGains = calculateBuildingProduction(buildings, research, deltaTime, globalMultiplier);
+  const resourceGains = calculateBuildingProduction(buildings, research, deltaTime, globalMultiplier, hunterStats);
 
   // Add knowledge production from training grounds
   const knowledgeProduction = calculateKnowledgeProduction(buildings, research, deltaTime);

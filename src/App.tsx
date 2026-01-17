@@ -11,6 +11,7 @@ import { ResearchTab } from './components/ResearchTab';
 import { ArtifactsTab } from './components/ArtifactsTab';
 import { DungeonsTab } from './components/DungeonsTab';
 import { AlliesTab } from './components/AlliesTab';
+import { DevTools } from './components/DevTools';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -119,6 +120,9 @@ function GameContent() {
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
         {renderTabContent()}
       </Box>
+
+      {/* Dev Tools - fixed position */}
+      <DevTools />
     </Box>
   );
 }

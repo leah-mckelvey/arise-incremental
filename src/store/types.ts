@@ -50,3 +50,65 @@ export interface Hunter {
   maxMana: number;
 }
 
+// Artifact system types
+export type ArtifactRank = 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
+
+export type ArtifactTier = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary';
+
+export type ArtifactSlot =
+  | 'weapon'
+  | 'head'
+  | 'chest'
+  | 'hands'
+  | 'legs'
+  | 'feet'
+  | 'neck'
+  | 'ears'
+  | 'wrist'
+  | 'ring1'
+  | 'ring2';
+
+export interface ArtifactStatBonus {
+  strength?: number;      // Percentage bonus (e.g., 5 = +5%)
+  agility?: number;
+  intelligence?: number;
+  vitality?: number;
+  sense?: number;
+}
+
+export interface ArtifactUpgrade {
+  id: string;
+  name: string;
+  description: string;
+  statBonus: ArtifactStatBonus;
+  cost: Resources;
+  blacksmithXpCost: number;
+}
+
+export interface Artifact {
+  id: string;
+  name: string;
+  description: string;
+  rank: ArtifactRank;
+  tier: ArtifactTier;               // Loot tier (Common → Legendary)
+  slot: ArtifactSlot;
+  baseStats: ArtifactStatBonus;
+  upgrades: ArtifactUpgrade[];      // Applied upgrades
+  maxUpgrades: number;              // Max upgrade slots (increases with tier)
+  craftCost: Resources;
+}
+
+export interface EquippedArtifacts {
+  weapon?: Artifact;
+  head?: Artifact;
+  chest?: Artifact;
+  hands?: Artifact;
+  legs?: Artifact;
+  feet?: Artifact;
+  neck?: Artifact;
+  ears?: Artifact;
+  wrist?: Artifact;
+  ring1?: Artifact;
+  ring2?: Artifact;
+}
+

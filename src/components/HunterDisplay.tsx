@@ -60,7 +60,7 @@ export const HunterDisplay = () => {
             boxShadow: `0 0 15px ${getRankColor(hunter.rank)}80`,
           }}
         >
-          {hunter.rank}-Rank {hunter.class}
+          {hunter.rank} {hunter.class}
         </Box>
       </Box>
 
@@ -162,6 +162,7 @@ export const HunterDisplay = () => {
                   {stat === 'agility' && '⚡'}
                   {stat === 'intelligence' && '🧠'}
                   {stat === 'vitality' && '❤️'}
+                  {stat === 'sense' && '👁️'}
                   {' '}{stat}: <span style={{ color: 'var(--accent-teal)' }}>{hunter.stats[stat]}</span>
                 </Text>
               </Box>

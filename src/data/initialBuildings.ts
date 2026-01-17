@@ -65,6 +65,26 @@ export const initialBuildings: Record<string, Building> = {
     produces: { crystals: 1 },
     perSecond: 0.2,
   },
+  library: {
+    id: 'library',
+    name: '📚 Library',
+    description: 'Generates knowledge points for research',
+    count: 0,
+    baseCost: createResources({ essence: 25, gold: 15 }),
+    costMultiplier: 1.15,
+    produces: { knowledge: 1 },
+    perSecond: 0.1,
+  },
+  merchantGuild: {
+    id: 'merchantGuild',
+    name: '💰 Merchant Guild',
+    description: 'Generates gold through trade and commerce',
+    count: 0,
+    baseCost: createResources({ essence: 30 }),
+    costMultiplier: 1.15,
+    produces: { gold: 1 },
+    perSecond: 0.15,
+  },
   // Storage buildings
   essenceVault: {
     id: 'essenceVault',
@@ -92,6 +112,15 @@ export const initialBuildings: Record<string, Building> = {
     baseCost: createResources({ essence: 100, gold: 50 }),
     costMultiplier: 1.12,
     increasesCaps: { gold: 100 },
+  },
+  archive: {
+    id: 'archive',
+    name: '📜 Archive',
+    description: 'Increases knowledge storage capacity',
+    count: 0,
+    baseCost: createResources({ essence: 75, gold: 50 }),
+    costMultiplier: 1.12,
+    increasesCaps: { knowledge: 50 },
   },
   // Advanced buildings (unlocked by research)
   soulHarvester: {

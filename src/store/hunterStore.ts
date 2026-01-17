@@ -7,6 +7,7 @@ export interface HunterState {
   hunter: Hunter;
   addXp: (amount: number, onLevelUp?: (newLevel: number) => void) => void;
   allocateStat: (stat: keyof HunterStats) => void;
+  getEffectiveStats: () => HunterStats;  // Base stats + artifact bonuses
   reset: () => void;
 }
 
@@ -72,6 +73,13 @@ export const useHunterStore = createStore<HunterState>((set) => {
         persistState(newState);
         return newState;
       });
+    },
+
+    getEffectiveStats: () => {
+      // Import artifacts store dynamically to avoid circular dependency
+      // For now, just return base stats - will be updated when artifacts are equipped
+      const state = useHunterStore.getState();
+      return state.hunter.stats;
     },
 
     reset: () => {
