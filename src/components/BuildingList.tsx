@@ -1,11 +1,13 @@
 import { useBuildingsQuery, useResourcesQuery } from '../queries/gameQueries';
-import { useGameStore, getBuildingCost, canAffordBuilding } from '../store/gameStore';
+import { gameStore, getBuildingCost, canAffordBuilding } from '../store/gameStore';
 import type { Resources, Building } from '../store/gameStore';
+import { Box, Heading, Button, Text, Stack } from '@ts-query/ui-react';
 
 export const BuildingList = () => {
   const { data: buildings } = useBuildingsQuery();
   const { data: resources } = useResourcesQuery();
-  const purchaseBuilding = useGameStore((state) => state.purchaseBuilding);
+  // Get the purchaseBuilding function directly from the store
+  const purchaseBuilding = gameStore.getState().purchaseBuilding;
 
   if (!buildings || !resources) return null;
 
@@ -33,69 +35,63 @@ export const BuildingList = () => {
   };
 
   return (
-    <div style={{ 
-      background: '#f0e8d8', 
-      padding: '20px', 
-      borderRadius: '8px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-    }}>
-      <h2 style={{ margin: '0 0 15px 0', color: '#5a4a3a' }}>Buildings</h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+    <Box
+      bg="#f0e8d8"
+      p={5}
+      rounded="8px"
+      style={{ boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+    >
+      <Heading level={3} style={{ marginBottom: '15px', color: '#5a4a3a' }}>
+        Buildings
+      </Heading>
+      <Stack gap={2.5}>
         {Object.values(buildings).map((building) => {
           const cost = getBuildingCost(building);
           const canAfford = canAffordBuilding(resources, building);
-          
+
           return (
-            <div
+            <Box
               key={building.id}
-              style={{
-                background: '#fff',
-                padding: '15px',
-                borderRadius: '4px',
-                border: canAfford ? '2px solid #4a9d5f' : '2px solid #ccc',
-              }}
+              bg="#fff"
+              p={3.75}
+              rounded="4px"
+              style={{ border: canAfford ? '2px solid #4a9d5f' : '2px solid #ccc' }}
             >
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                marginBottom: '8px'
-              }}>
-                <div>
-                  <strong style={{ fontSize: '18px' }}>{building.name}</strong>
-                  <span style={{ marginLeft: '10px', color: '#666' }}>
+              <Box
+                mb={2}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <Box>
+                  <Text fontSize="18px" fontWeight="bold">{building.name}</Text>
+                  <Text as="span" style={{ marginLeft: '10px', color: '#666' }}>
                     (Owned: {building.count})
-                  </span>
-                </div>
-                <button
+                  </Text>
+                </Box>
+                <Button
                   onClick={() => purchaseBuilding(building.id)}
                   disabled={!canAfford}
-                  style={{
-                    padding: '8px 16px',
-                    background: canAfford ? '#4a9d5f' : '#ccc',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: canAfford ? 'pointer' : 'not-allowed',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                  }}
+                  colorScheme={canAfford ? 'green' : 'gray'}
+                  size="sm"
                 >
                   Build
-                </button>
-              </div>
-              <div style={{ fontSize: '14px', color: '#666' }}>
-                <div>Cost: {renderCost(cost)}</div>
+                </Button>
+              </Box>
+              <Box style={{ fontSize: '14px', color: '#666' }}>
+                <Text>Cost: {renderCost(cost)}</Text>
                 {renderProduction(building) && (
-                  <div style={{ color: '#4a9d5f', marginTop: '4px' }}>
+                  <Text style={{ color: '#4a9d5f', marginTop: '4px' }}>
                     {renderProduction(building)}
-                  </div>
+                  </Text>
                 )}
-              </div>
-            </div>
+              </Box>
+            </Box>
           );
         })}
-      </div>
-    </div>
+      </Stack>
+    </Box>
   );
 };

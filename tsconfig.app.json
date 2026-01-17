@@ -15,6 +15,21 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+    "preserveSymlinks": true,
+    "paths": {
+      "@ts-query/core": [
+        "../ts-query/packages/core/src/index.ts",
+        "./ts-query/packages/core/src/index.ts"
+      ],
+      "@ts-query/react": [
+        "../ts-query/packages/react/src/index.ts",
+        "./ts-query/packages/react/src/index.ts"
+      ],
+      "@ts-query/ui-react": [
+        "../ts-query/packages/ui-react/src/index.ts",
+        "./ts-query/packages/ui-react/src/index.ts"
+      ]
+    },
 
     /* Linting */
     "strict": true,
@@ -24,5 +39,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "ts-query", "../ts-query"]
 }

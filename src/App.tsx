@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useGameStore } from './store/gameStore';
+import { QueryClient } from '@ts-query/core';
+import { QueryClientProvider } from '@ts-query/react';
+import { Box, Heading, Button } from '@ts-query/ui-react';
+import { gameStore } from './store/gameStore';
 import { ResourceDisplay } from './components/ResourceDisplay';
 import { GatheringActions } from './components/GatheringActions';
 import { BuildingList } from './components/BuildingList';
@@ -9,8 +11,9 @@ import './App.css';
 const queryClient = new QueryClient();
 
 function GameContent() {
-  const tick = useGameStore((state) => state.tick);
-  const reset = useGameStore((state) => state.reset);
+  // Get functions directly from the store
+  const tick = gameStore.getState().tick;
+  const reset = gameStore.getState().reset;
 
   // Game loop
   useEffect(() => {
@@ -22,40 +25,38 @@ function GameContent() {
   }, [tick]);
 
   return (
-    <div style={{ 
-      maxWidth: '1200px', 
-      margin: '0 auto', 
-      padding: '20px',
-      fontFamily: 'system-ui, -apple-system, sans-serif'
-    }}>
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '20px'
-      }}>
-        <h1 style={{ color: '#5a4a3a', margin: 0 }}>🐱 Arise Incremental</h1>
-        <button
+    <Box
+      p={5}
+      style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+      }}
+    >
+      <Box
+        mb={5}
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <Heading level={1} style={{ color: '#5a4a3a' }}>
+          🐱 Arise Incremental
+        </Heading>
+        <Button
           onClick={reset}
-          style={{
-            padding: '10px 20px',
-            background: '#d9534f',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: 'bold',
-          }}
+          colorScheme="red"
+          size="sm"
         >
           Reset Game
-        </button>
-      </div>
-      
+        </Button>
+      </Box>
+
       <ResourceDisplay />
       <GatheringActions />
       <BuildingList />
-    </div>
+    </Box>
   );
 }
 

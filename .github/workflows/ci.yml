@@ -1,0 +1,121 @@
+name: CI
+
+on:
+    push:
+        branches: [main, develop]
+    pull_request:
+        branches: [main, develop]
+
+jobs:
+    test:
+        name: Test & Lint
+        runs-on: ubuntu-latest
+
+        strategy:
+            matrix:
+                node-version: [20.x, 22.x]
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: "npm"
+
+            - name: Checkout ts-query monorepo
+              uses: actions/checkout@v4
+              continue-on-error: true
+              with:
+                  repository: ${{ github.repository_owner }}/ts-query
+                  path: ts-query
+
+            - name: Build ts-query packages
+              continue-on-error: true
+              run: |
+                  if [ -d "ts-query" ]; then
+                    cd ts-query
+                    npm install
+                    npm run build
+                    cd ..
+                  else
+                    echo "⚠️  ts-query repo not found - skipping build"
+                  fi
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Install ts-query packages from local
+              run: |
+                  if [ -d "ts-query/packages/core" ]; then
+                    npm install ./ts-query/packages/core ./ts-query/packages/react ./ts-query/packages/ui-react
+                    echo "✅ ts-query packages installed from local directories"
+                  else
+                    echo "⚠️  ts-query packages not found - skipping install"
+                  fi
+
+            - name: Type check
+              run: npm run typecheck
+
+            - name: Lint
+              run: npm run lint
+
+            - name: Run tests
+              run: npm run test:run
+
+            - name: Build
+              run: npm run build
+
+    merge-check:
+        name: Merge Readiness Check
+        runs-on: ubuntu-latest
+        if: github.event_name == 'pull_request'
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Checkout ts-query monorepo
+              uses: actions/checkout@v4
+              continue-on-error: true
+              with:
+                  repository: ${{ github.repository_owner }}/ts-query
+                  path: ts-query
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "22.x"
+                  cache: "npm"
+
+            - name: Build ts-query packages
+              continue-on-error: true
+              run: |
+                  if [ -d "ts-query" ]; then
+                    cd ts-query
+                    npm install
+                    npm run build
+                    cd ..
+                  else
+                    echo "⚠️  ts-query repo not found - skipping build"
+                  fi
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Install ts-query packages from local
+              run: |
+                  if [ -d "ts-query/packages/core" ]; then
+                    npm install ./ts-query/packages/core ./ts-query/packages/react ./ts-query/packages/ui-react
+                    echo "✅ ts-query packages installed from local directories"
+                  else
+                    echo "⚠️  ts-query packages not found - skipping install"
+                  fi
+
+            - name: Run full validation
+              run: npm run validate
+
+            - name: Check build
+              run: npm run build

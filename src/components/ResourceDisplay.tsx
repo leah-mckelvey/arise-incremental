@@ -1,4 +1,5 @@
 import { useResourcesQuery, useAllResourceRatesQuery } from '../queries/gameQueries';
+import { Box, Heading, Text } from '@ts-query/ui-react';
 
 export const ResourceDisplay = () => {
   const { data: resources } = useResourcesQuery();
@@ -15,28 +16,30 @@ export const ResourceDisplay = () => {
   };
 
   return (
-    <div style={{ 
-      background: '#f0e8d8', 
-      padding: '20px', 
-      borderRadius: '8px',
-      marginBottom: '20px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-    }}>
-      <h2 style={{ margin: '0 0 15px 0', color: '#5a4a3a' }}>Resources</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-        <div style={{ padding: '10px', background: '#fff', borderRadius: '4px' }}>
-          <strong>🌾 Catnip:</strong> {formatNumber(resources.catnip)} {formatRate(rates.catnip)}
-        </div>
-        <div style={{ padding: '10px', background: '#fff', borderRadius: '4px' }}>
-          <strong>🪵 Wood:</strong> {formatNumber(resources.wood)} {formatRate(rates.wood)}
-        </div>
-        <div style={{ padding: '10px', background: '#fff', borderRadius: '4px' }}>
-          <strong>⛰️ Minerals:</strong> {formatNumber(resources.minerals)} {formatRate(rates.minerals)}
-        </div>
-        <div style={{ padding: '10px', background: '#fff', borderRadius: '4px' }}>
-          <strong>🔬 Science:</strong> {formatNumber(resources.science)} {formatRate(rates.science)}
-        </div>
-      </div>
-    </div>
+    <Box
+      bg="#f0e8d8"
+      p={5}
+      rounded="8px"
+      mb={5}
+      style={{ boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+    >
+      <Heading level={3} style={{ marginBottom: '15px', color: '#5a4a3a' }}>
+        Resources
+      </Heading>
+      <Box style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <Box p={2.5} bg="#fff" rounded="4px">
+          <Text><strong>🌾 Catnip:</strong> {formatNumber(resources.catnip)} {formatRate(rates.catnip)}</Text>
+        </Box>
+        <Box p={2.5} bg="#fff" rounded="4px">
+          <Text><strong>🪵 Wood:</strong> {formatNumber(resources.wood)} {formatRate(rates.wood)}</Text>
+        </Box>
+        <Box p={2.5} bg="#fff" rounded="4px">
+          <Text><strong>⛰️ Minerals:</strong> {formatNumber(resources.minerals)} {formatRate(rates.minerals)}</Text>
+        </Box>
+        <Box p={2.5} bg="#fff" rounded="4px">
+          <Text><strong>🔬 Science:</strong> {formatNumber(resources.science)} {formatRate(rates.science)}</Text>
+        </Box>
+      </Box>
+    </Box>
   );
 };
