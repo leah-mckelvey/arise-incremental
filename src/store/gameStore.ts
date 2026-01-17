@@ -1,5 +1,4 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createStore } from '@ts-query/core';
 
 // Game resource types
 export interface Resources {
@@ -111,90 +110,117 @@ const initialState = {
   lastUpdate: Date.now(),
 };
 
-export const useGameStore = create<GameState>()(
-  persist(
-    (set, get) => ({
-      ...initialState,
-
-      addResource: (resource: keyof Resources, amount: number) => {
-        set((state) => ({
-          resources: {
-            ...state.resources,
-            [resource]: Math.max(0, state.resources[resource] + amount),
-          },
-        }));
-      },
-
-      purchaseBuilding: (buildingId: string) => {
-        const state = get();
-        const building = state.buildings[buildingId];
-        if (!building) return;
-
-        const cost = calculateCost(building);
-        if (!canAfford(state.resources, cost)) return;
-
-        set((state) => ({
-          resources: {
-            catnip: state.resources.catnip - cost.catnip,
-            wood: state.resources.wood - cost.wood,
-            minerals: state.resources.minerals - cost.minerals,
-            science: state.resources.science - cost.science,
-          },
-          buildings: {
-            ...state.buildings,
-            [buildingId]: {
-              ...building,
-              count: building.count + 1,
-            },
-          },
-        }));
-      },
-
-      tick: () => {
-        const state = get();
-        const now = Date.now();
-        const deltaTime = (now - state.lastUpdate) / 1000; // Convert to seconds
-
-        // Calculate resource generation
-        const resourceGains: Resources = {
-          catnip: 0,
-          wood: 0,
-          minerals: 0,
-          science: 0,
-        };
-
-        // Add production from buildings
-        Object.values(state.buildings).forEach((building) => {
-          if (building.produces && building.perSecond) {
-            Object.entries(building.produces).forEach(([resource, amount]) => {
-              if (amount) {
-                resourceGains[resource as keyof Resources] +=
-                  amount * building.count * building.perSecond! * deltaTime;
-              }
-            });
-          }
-        });
-
-        set((state) => ({
-          resources: {
-            catnip: state.resources.catnip + resourceGains.catnip,
-            wood: state.resources.wood + resourceGains.wood,
-            minerals: state.resources.minerals + resourceGains.minerals,
-            science: state.resources.science + resourceGains.science,
-          },
-          lastUpdate: now,
-        }));
-      },
-
-      reset: () => {
-        set(initialState);
-      },
-    }),
-    {
-      name: 'arise-incremental-storage',
+// Load persisted state from localStorage
+const loadPersistedState = (): Partial<GameState> | null => {
+  try {
+    const stored = localStorage.getItem('arise-incremental-storage');
+    if (stored) {
+      return JSON.parse(stored);
     }
-  )
-);
+  } catch (error) {
+    console.error('Failed to load persisted state:', error);
+  }
+  return null;
+};
+
+// Save state to localStorage
+const persistState = (state: GameState) => {
+  try {
+    localStorage.setItem('arise-incremental-storage', JSON.stringify(state));
+  } catch (error) {
+    console.error('Failed to persist state:', error);
+  }
+};
+
+export const gameStore = createStore<GameState>((set, get) => {
+  const persisted = loadPersistedState();
+
+  const store: GameState = {
+    ...initialState,
+    ...persisted,
+
+    addResource: (resource: keyof Resources, amount: number) => {
+      set((state) => ({
+        resources: {
+          ...state.resources,
+          [resource]: Math.max(0, state.resources[resource] + amount),
+        },
+      }));
+    },
+
+    purchaseBuilding: (buildingId: string) => {
+      const state = get();
+      const building = state.buildings[buildingId];
+      if (!building) return;
+
+      const cost = calculateCost(building);
+      if (!canAfford(state.resources, cost)) return;
+
+      set((state) => ({
+        resources: {
+          catnip: state.resources.catnip - cost.catnip,
+          wood: state.resources.wood - cost.wood,
+          minerals: state.resources.minerals - cost.minerals,
+          science: state.resources.science - cost.science,
+        },
+        buildings: {
+          ...state.buildings,
+          [buildingId]: {
+            ...building,
+            count: building.count + 1,
+          },
+        },
+      }));
+    },
+
+    tick: () => {
+      const state = get();
+      const now = Date.now();
+      const deltaTime = (now - state.lastUpdate) / 1000; // Convert to seconds
+
+      // Calculate resource generation
+      const resourceGains: Resources = {
+        catnip: 0,
+        wood: 0,
+        minerals: 0,
+        science: 0,
+      };
+
+      // Add production from buildings
+      Object.values(state.buildings).forEach((building) => {
+        if (building.produces && building.perSecond) {
+          Object.entries(building.produces).forEach(([resource, amount]) => {
+            if (amount) {
+              resourceGains[resource as keyof Resources] +=
+                amount * building.count * building.perSecond! * deltaTime;
+            }
+          });
+        }
+      });
+
+      set((state) => ({
+        resources: {
+          catnip: state.resources.catnip + resourceGains.catnip,
+          wood: state.resources.wood + resourceGains.wood,
+          minerals: state.resources.minerals + resourceGains.minerals,
+          science: state.resources.science + resourceGains.science,
+        },
+        lastUpdate: now,
+      }));
+    },
+
+    reset: () => {
+      set(initialState);
+    },
+  };
+
+  return store;
+});
+
+// Subscribe to state changes and persist
+gameStore.subscribe((state) => {
+  persistState(state);
+});
 
 // Helper function to get current building cost
 export const getBuildingCost = (building: Building): Resources => {
