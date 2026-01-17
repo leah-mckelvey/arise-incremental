@@ -12,6 +12,7 @@ import { ArtifactsTab } from './components/ArtifactsTab';
 import { DungeonsTab } from './components/DungeonsTab';
 import { AlliesTab } from './components/AlliesTab';
 import { DevTools } from './components/DevTools';
+import { NotificationDisplay } from './components/NotificationDisplay';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -123,6 +124,9 @@ function GameContent() {
 
       {/* Dev Tools - fixed position */}
       <DevTools />
+
+      {/* Notification Display - fixed position */}
+      <NotificationDisplay />
     </Box>
   );
 }

@@ -4,6 +4,8 @@ import { useBuildingsStore, type Building } from './buildingsStore';
 import { useResearchStore, type Research } from './researchStore';
 import { useHunterStore } from './hunterStore';
 import { useArtifactsStore } from './artifactsStore';
+import { useDungeonsStore } from './dungeonsStore';
+import { useNotificationsStore } from './notificationsStore';
 import {
   calculateResourceCaps,
   calculateGatherAmount,
@@ -125,6 +127,12 @@ export const gameStore = createStore<GameState>((set, get) => {
     ? deepMerge(initialState, persisted)
     : initialState;
 
+  // Check dungeon unlocks on load
+  setTimeout(() => {
+    const hunterLevel = useHunterStore.getState().hunter.level;
+    checkDungeonUnlocks(hunterLevel);
+  }, 0);
+
   const store: GameState = {
     ...mergedState,
 
@@ -171,6 +179,9 @@ export const gameStore = createStore<GameState>((set, get) => {
           const research = useResearchStore.getState().research;
           const hunter = useHunterStore.getState().hunter;
           const effectiveStats = getEffectiveHunterStats();
+
+          // Check for dungeon completion
+          checkDungeonCompletion();
 
           // Use calculation library to compute all gains (with artifact bonuses)
           const { resourceGains, xpGain } = calculateTickGains(
@@ -221,6 +232,7 @@ export const gameStore = createStore<GameState>((set, get) => {
           useResearchStore.getState().reset();
           useHunterStore.getState().reset();
           useArtifactsStore.getState().reset();
+          useDungeonsStore.getState().reset();
         },
 
         devFillResources: () => {
@@ -398,9 +410,73 @@ export const destroyArtifactsUnderRank = (maxRank: 'E' | 'D' | 'C' | 'B' | 'A' |
   });
 };
 
+// Dungeon actions
+export const startDungeon = (dungeonId: string) => {
+  const currentTime = Date.now();
+  useDungeonsStore.getState().startDungeon(dungeonId, currentTime, () => {
+    console.log('🏰 Dungeon started successfully');
+  });
+};
+
+export const cancelDungeon = () => {
+  useDungeonsStore.getState().cancelDungeon();
+};
+
+// Check and complete dungeon if time is up (called from tick)
+export const checkDungeonCompletion = () => {
+  const activeDungeon = useDungeonsStore.getState().activeDungeon;
+  if (!activeDungeon) return;
+
+  const currentTime = Date.now();
+  if (currentTime >= activeDungeon.endTime) {
+    useDungeonsStore.getState().completeDungeon(currentTime, (rewards, dungeonName) => {
+      // Grant all rewards
+      const currentResources = gameStore.getState().resources;
+      gameStore.setState({
+        resources: {
+          essence: currentResources.essence + rewards.essence,
+          crystals: currentResources.crystals + rewards.crystals,
+          gold: currentResources.gold + rewards.gold,
+          souls: currentResources.souls + rewards.souls,
+          attraction: currentResources.attraction + rewards.attraction,
+          gems: currentResources.gems + rewards.gems,
+          knowledge: currentResources.knowledge + rewards.knowledge,
+        },
+      });
+
+      // Grant hunter XP
+      useHunterStore.getState().addXp(rewards.experience, (newLevel) => {
+        console.log(`🎉 Leveled up to ${newLevel}!`);
+        checkDungeonUnlocks(newLevel);
+      });
+
+      // Show notification
+      useNotificationsStore.getState().addNotification(
+        'dungeon_complete',
+        'Dungeon Complete!',
+        `${dungeonName} cleared successfully!`,
+        rewards,
+        6000 // 6 seconds
+      );
+
+      console.log('🎉 Dungeon rewards granted!', rewards);
+    });
+  }
+};
+
+// Unlock dungeons based on hunter level
+export const checkDungeonUnlocks = (hunterLevel: number) => {
+  const dungeons = useDungeonsStore.getState().dungeons;
+  dungeons.forEach((dungeon) => {
+    if (!dungeon.unlocked && hunterLevel >= dungeon.requiredLevel) {
+      useDungeonsStore.getState().unlockDungeon(dungeon.id);
+    }
+  });
+};
+
 // Re-export types and helpers
 export type { Resources, ResourceCaps, Building, Research };
 export { createResources };
 export { getBuildingCost, canAffordBuilding } from './buildingsStore';
-export { useBuildingsStore, useResearchStore, useHunterStore, useArtifactsStore };
+export { useBuildingsStore, useResearchStore, useHunterStore, useArtifactsStore, useDungeonsStore };
 

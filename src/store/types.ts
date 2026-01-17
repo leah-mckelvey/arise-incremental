@@ -50,6 +50,52 @@ export interface Hunter {
   maxMana: number;
 }
 
+// Notification system types
+export type NotificationType = 'dungeon_complete' | 'level_up' | 'unlock' | 'craft' | 'error';
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  rewards?: DungeonRewards;
+  timestamp: number;
+  duration?: number; // ms, defaults to 5000
+}
+
+// Dungeon system types
+export type DungeonType = 'solo' | 'alliance';
+export type DungeonRank = 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
+
+export interface DungeonRewards {
+  essence: number;
+  crystals: number;
+  gold: number;
+  souls: number;
+  attraction: number;
+  gems: number;
+  knowledge: number;
+  experience: number; // Hunter XP
+}
+
+export interface Dungeon {
+  id: string;
+  name: string;
+  description: string;
+  type: DungeonType;
+  rank: DungeonRank;
+  requiredLevel: number;
+  duration: number; // seconds
+  rewards: DungeonRewards;
+  unlocked: boolean;
+}
+
+export interface ActiveDungeon {
+  dungeonId: string;
+  startTime: number; // timestamp
+  endTime: number; // timestamp
+}
+
 // Artifact system types
 export type ArtifactRank = 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
 
