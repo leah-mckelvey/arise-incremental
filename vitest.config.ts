@@ -8,6 +8,12 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./src/test/setup.ts'],
+    exclude: [
+      'node_modules/**',
+      'dist/**',
+      'ts-query/**',
+      '../ts-query/**',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -18,6 +24,8 @@ export default defineConfig({
         '**/*.config.*',
         '**/mockData',
         'dist/',
+        'ts-query/',
+        '../ts-query/',
       ],
     },
   },

@@ -6,9 +6,10 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'ts-query', '../ts-query', 'node_modules']),
   {
     files: ['**/*.{ts,tsx}'],
+    ignores: ['ts-query/**', '../ts-query/**'],
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
