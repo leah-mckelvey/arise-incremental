@@ -235,6 +235,28 @@ describe('gameStore', () => {
       const newState = gameStore.getState();
       expect(newState.buildings.catnipField.count).toBe(0);
     });
+
+    it('should refresh lastUpdate to current time on reset', () => {
+      vi.useFakeTimers();
+      const initialTime = Date.now();
+      vi.setSystemTime(initialTime);
+
+      const state = gameStore.getState();
+      state.addResource('catnip', 100);
+
+      // Advance time by 1 hour
+      vi.advanceTimersByTime(3600000);
+      const timeBeforeReset = Date.now();
+
+      state.reset();
+
+      const newState = gameStore.getState();
+      // lastUpdate should be close to current time, not the initial module load time
+      expect(newState.lastUpdate).toBeGreaterThanOrEqual(timeBeforeReset);
+      expect(newState.lastUpdate).toBeLessThanOrEqual(Date.now());
+
+      vi.useRealTimers();
+    });
   });
 
   describe('Persistence', () => {

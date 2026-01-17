@@ -210,7 +210,10 @@ export const gameStore = createStore<GameState>((set, get) => {
     },
 
     reset: () => {
-      set(initialState);
+      set({
+        ...initialState,
+        lastUpdate: Date.now(),
+      });
     },
   };
 
