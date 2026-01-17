@@ -13,7 +13,7 @@
     "test:run": "vitest run",
     "typecheck": "tsc --noEmit",
     "validate": "npm run typecheck && npm run lint && npm run test:run",
-    "prepare": "husky"
+    "prepare": "node -e \"if (process.env.CI !== 'true') { require('child_process').execSync('husky', { stdio: 'inherit' }) }\""
   },
   "dependencies": {
     "react": "^19.2.0",
