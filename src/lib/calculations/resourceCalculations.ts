@@ -168,6 +168,79 @@ export const calculateBuildingEfficiency = (
 };
 
 /**
+ * Calculate the total cost for purchasing multiple buildings
+ * Uses geometric series formula for exponential cost scaling
+ */
+export const calculateBulkBuildingCost = (
+  building: Building,
+  quantity: number
+): Resources => {
+  const baseCost = building.baseCost;
+  const multiplier = building.costMultiplier;
+  const currentCount = building.count;
+
+  // For each resource, calculate the sum of geometric series
+  // Cost = baseCost * multiplier^n for the nth building
+  // Total = baseCost * (multiplier^currentCount) * (1 - multiplier^quantity) / (1 - multiplier)
+  const totalCost: Resources = {
+    essence: 0,
+    crystals: 0,
+    gold: 0,
+    souls: 0,
+    attraction: 0,
+    gems: 0,
+    knowledge: 0,
+  };
+
+  Object.keys(baseCost).forEach((resource) => {
+    const baseAmount = baseCost[resource as keyof Resources];
+    if (baseAmount > 0) {
+      // Sum of geometric series: a * (1 - r^n) / (1 - r)
+      // where a = baseCost * multiplier^currentCount, r = multiplier, n = quantity
+      const firstCost = baseAmount * Math.pow(multiplier, currentCount);
+      const sum = firstCost * (1 - Math.pow(multiplier, quantity)) / (1 - multiplier);
+      totalCost[resource as keyof Resources] = Math.floor(sum);
+    }
+  });
+
+  return totalCost;
+};
+
+/**
+ * Calculate the maximum number of buildings that can be purchased with current resources
+ */
+export const calculateMaxBuildingPurchases = (
+  building: Building,
+  currentResources: Resources
+): number => {
+  let maxQuantity = 0;
+
+  // Binary search for the maximum quantity we can afford
+  let low = 0;
+  let high = 1000; // Reasonable upper limit
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const cost = calculateBulkBuildingCost(building, mid);
+
+    // Check if we can afford this quantity
+    const canAfford = Object.keys(cost).every((resource) => {
+      const resourceKey = resource as keyof Resources;
+      return cost[resourceKey] <= currentResources[resourceKey];
+    });
+
+    if (canAfford) {
+      maxQuantity = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  return maxQuantity;
+};
+
+/**
  * Calculate synergy multiplier for a specific building
  */
 export const calculateBuildingSynergy = (

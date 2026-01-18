@@ -18,8 +18,8 @@ describe('buildingsStore', () => {
     it('should have correct base costs', () => {
       const buildings = useBuildingsStore.getState().buildings;
       expect(buildings.essenceExtractor.baseCost.essence).toBe(10);
-      expect(buildings.trainingGround.baseCost.essence).toBe(50);
-      expect(buildings.trainingGround.baseCost.gold).toBe(25);
+      expect(buildings.trainingGround.baseCost.essence).toBe(30);
+      expect(buildings.trainingGround.baseCost.gold).toBe(20);
     });
   });
 
@@ -132,7 +132,7 @@ describe('buildingsStore', () => {
       const building = useBuildingsStore.getState().buildings.essenceExtractor;
       expect(building.produces).toBeDefined();
       expect(building.perSecond).toBeDefined();
-      expect(building.produces?.essence).toBe(1);
+      expect(building.produces?.essence).toBe(3);
       expect(building.perSecond).toBe(0.1);
     });
 

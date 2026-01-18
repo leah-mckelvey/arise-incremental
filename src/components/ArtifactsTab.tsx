@@ -1,6 +1,6 @@
 import { useStore } from '@ts-query/react';
 import { Box, Heading, Text, Button, Stack } from '@ts-query/ui-react';
-import { useArtifactsStore, useHunterStore, gameStore, craftArtifact, equipArtifact, unequipArtifact, upgradeArtifact, destroyArtifact, destroyArtifactsUnderRank } from '../store/gameStore';
+import { useArtifactsStore, useHunterStore, gameStore, craftArtifact, craftArtifactBulk, equipArtifact, unequipArtifact, upgradeArtifact, upgradeArtifactBulk, destroyArtifact, destroyArtifactsUnderRank } from '../store/gameStore';
 import type { ArtifactRank, ArtifactSlot, Artifact } from '../store/types';
 import { canCraftRank, calculateCraftCost, canBlacksmithCraftRank, getMaxCraftableRank } from '../lib/calculations/artifactCalculations';
 import { getTierColor, calculateTierDropRates } from '../lib/lootGenerator';
@@ -17,6 +17,8 @@ export const ArtifactsTab = () => {
   const resources = useStore(gameStore, (state) => state.resources);
 
   const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
+  const [craftBulkAmount, setCraftBulkAmount] = useState<1 | 5 | 10 | 100>(1);
+  const [upgradeBulkAmount, setUpgradeBulkAmount] = useState<1 | 5 | 10 | 100>(1);
 
   const slots: Array<{ slot: ArtifactSlot; name: string; icon: string }> = [
     { slot: 'weapon', name: 'Weapon', icon: '⚔️' },
@@ -43,7 +45,11 @@ export const ArtifactsTab = () => {
       alert(`Your blacksmith needs to be higher level to craft ${rank}-rank artifacts!`);
       return;
     }
-    craftArtifact(rank, slot);
+    if (craftBulkAmount === 1) {
+      craftArtifact(rank, slot);
+    } else {
+      craftArtifactBulk(rank, slot, craftBulkAmount);
+    }
   };
 
   const formatStatBonus = (stats: Record<string, number | undefined>) => {
@@ -51,6 +57,20 @@ export const ArtifactsTab = () => {
       .filter(([, value]) => value && value > 0)
       .map(([stat, value]) => `${stat}: +${value}%`)
       .join(', ');
+  };
+
+  const calculateTotalStats = (artifact: Artifact) => {
+    const total: Record<string, number> = { ...artifact.baseStats };
+
+    artifact.upgrades.forEach((upgrade) => {
+      Object.entries(upgrade.statBonus).forEach(([stat, value]) => {
+        if (value) {
+          total[stat] = (total[stat] || 0) + value;
+        }
+      });
+    });
+
+    return total;
   };
 
   return (
@@ -127,11 +147,14 @@ export const ArtifactsTab = () => {
                         {artifact.name}
                       </Text>
                       <Text style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
-                        {artifact.tier} {artifact.rank}-Rank | {formatStatBonus(artifact.baseStats)}
+                        {artifact.tier} {artifact.rank}-Rank
+                      </Text>
+                      <Text style={{ color: 'var(--accent-teal)', fontSize: '12px' }}>
+                        {formatStatBonus(calculateTotalStats(artifact))}
                       </Text>
                       {artifact.upgrades.length > 0 && (
-                        <Text style={{ color: 'var(--accent-teal)', fontSize: '12px' }}>
-                          +{artifact.upgrades.length}/{artifact.maxUpgrades} upgrades
+                        <Text style={{ color: 'var(--text-dim)', fontSize: '11px' }}>
+                          Base: {formatStatBonus(artifact.baseStats)} | +{artifact.upgrades.length} upgrades
                         </Text>
                       )}
                     </>
@@ -206,11 +229,14 @@ export const ArtifactsTab = () => {
                     {artifact.name}
                   </Text>
                   <Text style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
-                    {artifact.tier} {artifact.rank}-Rank {artifact.slot} | {formatStatBonus(artifact.baseStats)}
+                    {artifact.tier} {artifact.rank}-Rank {artifact.slot}
+                  </Text>
+                  <Text style={{ color: 'var(--accent-teal)', fontSize: '12px' }}>
+                    {formatStatBonus(calculateTotalStats(artifact))}
                   </Text>
                   {artifact.upgrades.length > 0 && (
-                    <Text style={{ color: 'var(--accent-teal)', fontSize: '11px' }}>
-                      Upgrades: {artifact.upgrades.map(u => u.name).join(', ')}
+                    <Text style={{ color: 'var(--text-dim)', fontSize: '11px' }}>
+                      Base: {formatStatBonus(artifact.baseStats)} | Upgrades: {artifact.upgrades.map(u => u.name).join(', ')}
                     </Text>
                   )}
                 </Box>
@@ -304,9 +330,29 @@ export const ArtifactsTab = () => {
           border: '1px solid var(--border-color)',
         }}
       >
-        <Heading level={3} style={{ color: 'var(--accent-gold)', marginBottom: '15px' }}>
-          ⚒️ Craft Artifacts
-        </Heading>
+        <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <Heading level={3} style={{ color: 'var(--accent-gold)' }}>
+            ⚒️ Craft Artifacts
+          </Heading>
+          <Box style={{ display: 'flex', gap: '8px' }}>
+            {([1, 5, 10, 100] as const).map((amount) => (
+              <Button
+                key={amount}
+                onClick={() => setCraftBulkAmount(amount)}
+                size="sm"
+                style={{
+                  background: craftBulkAmount === amount ? 'var(--accent-gold)' : 'var(--bg-tertiary)',
+                  color: craftBulkAmount === amount ? '#000' : 'var(--text-secondary)',
+                  border: `1px solid ${craftBulkAmount === amount ? 'var(--accent-gold)' : 'var(--border-color)'}`,
+                  fontWeight: 'bold',
+                  minWidth: '50px',
+                }}
+              >
+                x{amount}
+              </Button>
+            ))}
+          </Box>
+        </Box>
         <Text style={{ color: 'var(--text-secondary)', marginBottom: '15px', fontSize: '14px' }}>
           Select a rank and slot to craft an artifact
         </Text>
@@ -391,12 +437,34 @@ export const ArtifactsTab = () => {
               }}
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
-              <Heading level={3} style={{ color: getTierColor(freshArtifact.tier), marginBottom: '15px' }}>
-                ⚒️ Upgrade: {freshArtifact.name}
-              </Heading>
-              <Text style={{ color: 'var(--text-secondary)', marginBottom: '15px' }}>
-                {freshArtifact.tier} {freshArtifact.rank}-Rank {freshArtifact.slot} | Upgrades: {freshArtifact.upgrades.length}/{freshArtifact.maxUpgrades}
-              </Text>
+              <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <Box>
+                  <Heading level={3} style={{ color: getTierColor(freshArtifact.tier) }}>
+                    ⚒️ Upgrade: {freshArtifact.name}
+                  </Heading>
+                  <Text style={{ color: 'var(--text-secondary)' }}>
+                    {freshArtifact.tier} {freshArtifact.rank}-Rank {freshArtifact.slot} | Upgrades: {freshArtifact.upgrades.length}/{freshArtifact.maxUpgrades}
+                  </Text>
+                </Box>
+                <Box style={{ display: 'flex', gap: '8px' }}>
+                  {([1, 5, 10, 100] as const).map((amount) => (
+                    <Button
+                      key={amount}
+                      onClick={() => setUpgradeBulkAmount(amount)}
+                      size="sm"
+                      style={{
+                        background: upgradeBulkAmount === amount ? 'var(--accent-gold)' : 'var(--bg-tertiary)',
+                        color: upgradeBulkAmount === amount ? '#000' : 'var(--text-secondary)',
+                        border: `1px solid ${upgradeBulkAmount === amount ? 'var(--accent-gold)' : 'var(--border-color)'}`,
+                        fontWeight: 'bold',
+                        minWidth: '50px',
+                      }}
+                    >
+                      x{amount}
+                    </Button>
+                  ))}
+                </Box>
+              </Box>
 
               <Stack gap={2}>
                 {Object.values(availableUpgrades).map((upgrade) => {
@@ -434,7 +502,11 @@ export const ArtifactsTab = () => {
                         </Box>
                         <Button
                           onClick={() => {
-                            upgradeArtifact(freshArtifact.id, upgrade.id);
+                            if (upgradeBulkAmount === 1) {
+                              upgradeArtifact(freshArtifact.id, upgrade.id);
+                            } else {
+                              upgradeArtifactBulk(freshArtifact.id, upgrade.id, upgradeBulkAmount);
+                            }
                             // Don't close modal - let it refresh with new upgrade count
                           }}
                           disabled={isFull || !canAfford}
@@ -445,7 +517,7 @@ export const ArtifactsTab = () => {
                             color: canAfford && !isFull ? '#000' : 'var(--text-dim)',
                           }}
                         >
-                          Apply
+                          {upgradeBulkAmount === 1 ? 'Apply' : `Apply x${upgradeBulkAmount}`}
                         </Button>
                       </Box>
                     </Box>

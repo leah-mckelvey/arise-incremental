@@ -1,23 +1,27 @@
-import { gameStore } from '../store/gameStore';
-import { useHunterQuery } from '../queries/gameQueries';
+import { gameStore, getEffectiveHunterStats } from '../store/gameStore';
+import { useHunterQuery, useResearchQuery } from '../queries/gameQueries';
+import { calculateGatherAmount, calculateGatherXp } from '../lib/calculations/resourceCalculations';
 import { Box, Heading, Button, Text } from '@ts-query/ui-react';
 
 export const GatheringActions = () => {
   // Get functions directly from the store
   const gatherResource = gameStore.getState().gatherResource;
   const { data: hunter } = useHunterQuery();
+  const { data: research } = useResearchQuery();
 
-  if (!hunter) return null;
+  if (!hunter || !research) return null;
 
-  // Calculate stat bonuses for display (matching actual calculation logic)
-  const essenceAmount = (1 * (1 + hunter.stats.sense / 100)).toFixed(1);
-  const crystalsAmount = (0.5 * (1 + hunter.stats.intelligence / 100)).toFixed(1);
-  const goldAmount = (2 * (1 + hunter.stats.agility / 100)).toFixed(1);
+  const effectiveStats = getEffectiveHunterStats();
 
-  // XP calculation: 0.1 * (1 + stat / 200)
-  const essenceXp = (0.1 * (1 + hunter.stats.sense / 200)).toFixed(2);
-  const crystalsXp = (0.1 * (1 + hunter.stats.intelligence / 200)).toFixed(2);
-  const goldXp = (0.1 * (1 + hunter.stats.agility / 200)).toFixed(2);
+  // Calculate actual gather amounts using the same function as the actual gathering
+  const essenceAmount = calculateGatherAmount('essence', effectiveStats, research).toFixed(1);
+  const crystalsAmount = calculateGatherAmount('crystals', effectiveStats, research).toFixed(1);
+  const goldAmount = calculateGatherAmount('gold', effectiveStats, research).toFixed(1);
+
+  // XP calculation using the same function as actual gathering
+  const essenceXp = calculateGatherXp('essence', effectiveStats).toFixed(2);
+  const crystalsXp = calculateGatherXp('crystals', effectiveStats).toFixed(2);
+  const goldXp = calculateGatherXp('gold', effectiveStats).toFixed(2);
 
   return (
     <Box

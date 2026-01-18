@@ -1,6 +1,7 @@
 import { createStore } from '@ts-query/core';
 import type { Resources, ResourceCaps } from './types';
 import { calculateBuildingCost, canAffordCost } from '../lib/calculations/buildingCalculations';
+import { calculateBulkBuildingCost } from '../lib/calculations/resourceCalculations';
 import { initialBuildings } from '../data/initialBuildings';
 
 // Building types
@@ -20,6 +21,7 @@ export interface Building {
 export interface BuildingsState {
   buildings: Record<string, Building>;
   purchaseBuilding: (buildingId: string, resources: Resources, onSuccess: (cost: Resources, newBuildings: Record<string, Building>) => void) => void;
+  purchaseBuildingBulk: (buildingId: string, quantity: number, resources: Resources, onSuccess: (cost: Resources, newBuildings: Record<string, Building>) => void) => void;
   reset: () => void;
 }
 
@@ -68,6 +70,30 @@ export const useBuildingsStore = createStore<BuildingsState>((set, get) => {
         [buildingId]: {
           ...building,
           count: building.count + 1,
+        },
+      };
+
+      set((state) => {
+        const newState = { ...state, buildings: newBuildings };
+        persistState(newState);
+        return newState;
+      });
+
+      onSuccess(cost, newBuildings);
+    },
+
+    purchaseBuildingBulk: (buildingId, quantity, resources, onSuccess) => {
+      const building = get().buildings[buildingId];
+      if (!building || quantity <= 0) return;
+
+      const cost = calculateBulkBuildingCost(building, quantity);
+      if (!canAffordCost(resources, cost)) return;
+
+      const newBuildings = {
+        ...get().buildings,
+        [buildingId]: {
+          ...building,
+          count: building.count + quantity,
         },
       };
 

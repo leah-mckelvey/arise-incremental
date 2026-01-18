@@ -1,6 +1,6 @@
 import { Box, Button } from '@ts-query/ui-react';
 
-export type TabId = 'hunter' | 'buildings' | 'research' | 'artifacts' | 'dungeons' | 'allies';
+export type TabId = 'hunter' | 'buildings' | 'research' | 'artifacts' | 'dungeons' | 'allies' | 'shadows';
 
 export interface Tab {
   id: TabId;
@@ -20,6 +20,7 @@ const tabs: Tab[] = [
   { id: 'artifacts', label: 'Artifacts', icon: '💍' },
   { id: 'dungeons', label: 'Dungeons', icon: '🏰' },
   { id: 'allies', label: 'Allies', icon: '👥' },
+  { id: 'shadows', label: 'Shadows', icon: '👻' },
 ];
 
 export const TabNavigation = ({ activeTab, onTabChange }: TabNavigationProps) => {

@@ -70,12 +70,12 @@ export const calculateUpgradeCost = (artifactRank: string, upgradeCount: number)
   const baseCost = (rankMultipliers[artifactRank] || 1) * (upgradeCount + 1);
 
   return {
-    essence: Math.floor(baseCost * 20),
-    crystals: Math.floor(baseCost * 10),
-    gold: Math.floor(baseCost * 40),
+    essence: Math.floor(baseCost * 5), // Reduced from 20 to 5
+    crystals: Math.floor(baseCost * 25), // Increased from 10 to 25
+    gold: Math.floor(baseCost * 50), // Increased from 40 to 50
     souls: Math.floor(baseCost * 2),
     attraction: 0,
-    gems: 0,
+    gems: Math.floor(baseCost * 1), // Added gems cost
     knowledge: 0,
   };
 };

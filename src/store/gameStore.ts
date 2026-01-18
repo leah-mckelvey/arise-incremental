@@ -6,6 +6,8 @@ import { useHunterStore } from './hunterStore';
 import { useArtifactsStore } from './artifactsStore';
 import { useDungeonsStore } from './dungeonsStore';
 import { useNotificationsStore } from './notificationsStore';
+import { useAlliesStore } from './alliesStore';
+import { useShadowsStore } from './shadowsStore';
 import {
   calculateResourceCaps,
   calculateGatherAmount,
@@ -127,12 +129,6 @@ export const gameStore = createStore<GameState>((set, get) => {
     ? deepMerge(initialState, persisted)
     : initialState;
 
-  // Check dungeon unlocks on load
-  setTimeout(() => {
-    const hunterLevel = useHunterStore.getState().hunter.level;
-    checkDungeonUnlocks(hunterLevel);
-  }, 0);
-
   const store: GameState = {
     ...mergedState,
 
@@ -167,6 +163,9 @@ export const gameStore = createStore<GameState>((set, get) => {
             set({
               resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, research, newLevel, updatedEffectiveStats),
             });
+
+            // Check for dungeon unlocks
+            checkDungeonUnlocks(newLevel);
           });
         },
 
@@ -216,6 +215,9 @@ export const gameStore = createStore<GameState>((set, get) => {
               set({
                 resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, research, newLevel, updatedEffectiveStats),
               });
+
+              // Check for dungeon unlocks
+              checkDungeonUnlocks(newLevel);
             });
           }
         },
@@ -233,6 +235,8 @@ export const gameStore = createStore<GameState>((set, get) => {
           useHunterStore.getState().reset();
           useArtifactsStore.getState().reset();
           useDungeonsStore.getState().reset();
+          useAlliesStore.getState().reset();
+          useShadowsStore.getState().reset();
         },
 
         devFillResources: () => {
@@ -281,6 +285,25 @@ export const purchaseBuilding = (buildingId: string) => {
     const newResources = deductCost(currentResources, cost);
 
     // Deduct resources using calculation library (with artifact bonuses)
+    gameStore.setState({
+      resources: newResources,
+      resourceCaps: calculateResourceCaps(baseResourceCaps, newBuildings, research, hunter.level, effectiveStats),
+    });
+  });
+};
+
+export const purchaseBuildingBulk = (buildingId: string, quantity: number) => {
+  const resources = gameStore.getState().resources;
+  const research = useResearchStore.getState().research;
+  const hunter = useHunterStore.getState().hunter;
+  const effectiveStats = getEffectiveHunterStats();
+
+  useBuildingsStore.getState().purchaseBuildingBulk(buildingId, quantity, resources, (cost, newBuildings) => {
+    // Get fresh resources in case they changed
+    const currentResources = gameStore.getState().resources;
+    const newResources = deductCost(currentResources, cost);
+
+    // Deduct resources
     gameStore.setState({
       resources: newResources,
       resourceCaps: calculateResourceCaps(baseResourceCaps, newBuildings, research, hunter.level, effectiveStats),
@@ -344,6 +367,12 @@ export const craftArtifact = (rank: import('./types').ArtifactRank, slot: import
   });
 };
 
+export const craftArtifactBulk = (rank: import('./types').ArtifactRank, slot: import('./types').ArtifactSlot, quantity: number) => {
+  for (let i = 0; i < quantity; i++) {
+    craftArtifact(rank, slot);
+  }
+};
+
 export const equipArtifact = (artifact: import('./types').Artifact) => {
   useArtifactsStore.getState().equipArtifact(artifact);
 
@@ -385,6 +414,12 @@ export const upgradeArtifact = (artifactId: string, upgradeId: string) => {
   });
 };
 
+export const upgradeArtifactBulk = (artifactId: string, upgradeId: string, quantity: number) => {
+  for (let i = 0; i < quantity; i++) {
+    upgradeArtifact(artifactId, upgradeId);
+  }
+};
+
 export const destroyArtifact = (artifactId: string) => {
   useArtifactsStore.getState().destroyArtifact(artifactId, (essenceGain) => {
     const currentResources = gameStore.getState().resources;
@@ -411,57 +446,183 @@ export const destroyArtifactsUnderRank = (maxRank: 'E' | 'D' | 'C' | 'B' | 'A' |
 };
 
 // Dungeon actions
-export const startDungeon = (dungeonId: string) => {
+export const startDungeon = (dungeonId: string, partyIds: string[] = []) => {
   const currentTime = Date.now();
-  useDungeonsStore.getState().startDungeon(dungeonId, currentTime, () => {
+  useDungeonsStore.getState().startDungeon(dungeonId, currentTime, partyIds, () => {
     console.log('🏰 Dungeon started successfully');
   });
 };
 
-export const cancelDungeon = () => {
-  useDungeonsStore.getState().cancelDungeon();
+export const cancelDungeon = (dungeonId: string) => {
+  useDungeonsStore.getState().cancelDungeon(dungeonId);
 };
 
-// Check and complete dungeon if time is up (called from tick)
+// Check and complete dungeons if time is up (called from tick)
 export const checkDungeonCompletion = () => {
-  const activeDungeon = useDungeonsStore.getState().activeDungeon;
-  if (!activeDungeon) return;
+  const activeDungeons = useDungeonsStore.getState().activeDungeons;
+  if (activeDungeons.length === 0) return;
 
   const currentTime = Date.now();
-  if (currentTime >= activeDungeon.endTime) {
-    useDungeonsStore.getState().completeDungeon(currentTime, (rewards, dungeonName) => {
+
+  // Check each active dungeon
+  activeDungeons.forEach((activeDungeon) => {
+    if (currentTime >= activeDungeon.endTime) {
+      useDungeonsStore.getState().completeDungeon(activeDungeon.dungeonId, currentTime, (rewards, dungeonName, dungeon) => {
+      // Calculate companion effectiveness based on their level vs Sung Jinwoo's level
+      const hunterLevel = useHunterStore.getState().hunter.level;
+      let companionEffectiveness = 0;
+
+      if (activeDungeon.partyIds && activeDungeon.partyIds.length > 0) {
+        activeDungeon.partyIds.forEach((companionId) => {
+          // Find the companion
+          const ally = useAlliesStore.getState().allies.find((a) => a.id === companionId);
+          const shadow = useShadowsStore.getState().shadows.find((s) => s.id === companionId);
+          const companion = ally || shadow;
+
+          if (companion) {
+            // Companion effectiveness = their level / hunter level
+            // e.g., level 4 companion with level 12 hunter = 4/12 = 0.33 (33% effectiveness)
+            const effectiveness = companion.level / hunterLevel;
+            companionEffectiveness += effectiveness;
+          }
+        });
+      }
+
+      // Total multiplier = 1 (Sung Jinwoo) + companion effectiveness
+      const rewardMultiplier = 1 + companionEffectiveness;
+
+      // Multiply all rewards by effectiveness
+      const multipliedRewards = {
+        essence: Math.floor(rewards.essence * rewardMultiplier),
+        crystals: Math.floor(rewards.crystals * rewardMultiplier),
+        gold: Math.floor(rewards.gold * rewardMultiplier),
+        souls: Math.floor(rewards.souls * rewardMultiplier),
+        attraction: Math.floor(rewards.attraction * rewardMultiplier),
+        gems: Math.floor(rewards.gems * rewardMultiplier),
+        knowledge: Math.floor(rewards.knowledge * rewardMultiplier),
+        experience: Math.floor(rewards.experience * rewardMultiplier),
+      };
+
       // Grant all rewards
       const currentResources = gameStore.getState().resources;
       gameStore.setState({
         resources: {
-          essence: currentResources.essence + rewards.essence,
-          crystals: currentResources.crystals + rewards.crystals,
-          gold: currentResources.gold + rewards.gold,
-          souls: currentResources.souls + rewards.souls,
-          attraction: currentResources.attraction + rewards.attraction,
-          gems: currentResources.gems + rewards.gems,
-          knowledge: currentResources.knowledge + rewards.knowledge,
+          essence: currentResources.essence + multipliedRewards.essence,
+          crystals: currentResources.crystals + multipliedRewards.crystals,
+          gold: currentResources.gold + multipliedRewards.gold,
+          souls: currentResources.souls + multipliedRewards.souls,
+          attraction: currentResources.attraction + multipliedRewards.attraction,
+          gems: currentResources.gems + multipliedRewards.gems,
+          knowledge: currentResources.knowledge + multipliedRewards.knowledge,
         },
       });
 
       // Grant hunter XP
-      useHunterStore.getState().addXp(rewards.experience, (newLevel) => {
+      useHunterStore.getState().addXp(multipliedRewards.experience, (newLevel) => {
         console.log(`🎉 Leveled up to ${newLevel}!`);
         checkDungeonUnlocks(newLevel);
+
+        // Unlock necromancer at level 40
+        if (newLevel === 40) {
+          useShadowsStore.getState().unlockNecromancer();
+        }
       });
 
-      // Show notification
+      // Grant XP to companions in party
+      if (activeDungeon.partyIds && activeDungeon.partyIds.length > 0) {
+        const companionXp = Math.floor(rewards.experience * 0.5); // Companions get 50% of base XP
+
+        activeDungeon.partyIds.forEach((companionId) => {
+          // Check if it's an ally or shadow
+          const ally = useAlliesStore.getState().allies.find((a) => a.id === companionId);
+          if (ally) {
+            useAlliesStore.getState().addXpToAlly(companionId, companionXp);
+          } else {
+            const shadow = useShadowsStore.getState().shadows.find((s) => s.id === companionId);
+            if (shadow) {
+              useShadowsStore.getState().addXpToShadow(companionId, companionXp);
+            }
+          }
+        });
+      }
+
+      // Check for companion drop
+      if (dungeon.companionDropChance && dungeon.companionNames && dungeon.companionNames.length > 0) {
+        // Filter out companions you already have
+        let availableCompanionNames: string[] = [];
+
+        if (dungeon.type === 'alliance') {
+          const existingAllyNames = useAlliesStore.getState().allies
+            .filter(a => a.originDungeonId === dungeon.id)
+            .map(a => a.name);
+          availableCompanionNames = dungeon.companionNames.filter(name => !existingAllyNames.includes(name));
+        } else if (dungeon.type === 'solo') {
+          const existingShadowNames = useShadowsStore.getState().shadows
+            .filter(s => s.originDungeonId === dungeon.id)
+            .map(s => s.name);
+          availableCompanionNames = dungeon.companionNames.filter(name => !existingShadowNames.includes(name));
+        }
+
+        // Only roll if there are companions left to recruit
+        if (availableCompanionNames.length > 0) {
+          const roll = Math.random();
+          console.log(`🎲 Companion drop roll: ${roll.toFixed(3)} vs ${dungeon.companionDropChance} (${dungeon.name})`);
+          console.log(`   Available companions: ${availableCompanionNames.join(', ')} (${availableCompanionNames.length}/${dungeon.companionNames.length})`);
+
+          if (roll < dungeon.companionDropChance) {
+            // Randomly select from available companions
+            const randomName = availableCompanionNames[Math.floor(Math.random() * availableCompanionNames.length)];
+            console.log(`✅ Companion dropped! Type: ${dungeon.type}, Name: ${randomName}`);
+
+            if (dungeon.type === 'alliance') {
+              // Recruit ally
+              const newAlly = useAlliesStore.getState().recruitAlly(randomName, dungeon.id);
+              console.log(`🤝 Recruited ally:`, newAlly);
+              useNotificationsStore.getState().addNotification(
+                'unlock',
+                'New Ally Recruited!',
+                `${newAlly.name} has joined your cause!`,
+                undefined,
+                6000
+              );
+            } else if (dungeon.type === 'solo' && useShadowsStore.getState().necromancerUnlocked) {
+              // Extract shadow (only if necromancer unlocked)
+              const newShadow = useShadowsStore.getState().extractShadow(randomName, dungeon.id);
+              console.log(`👻 Extracted shadow:`, newShadow);
+              if (newShadow.id) {
+                useNotificationsStore.getState().addNotification(
+                  'unlock',
+                  'Shadow Extracted!',
+                  `${newShadow.name} has been added to your shadow army!`,
+                  undefined,
+                  6000
+                );
+              }
+            }
+          } else {
+            console.log(`❌ No companion dropped this time`);
+          }
+        } else {
+          console.log(`✅ All companions from ${dungeon.name} already recruited!`);
+        }
+      }
+
+      // Show completion notification
+      const partySize = activeDungeon.partyIds?.length || 0;
       useNotificationsStore.getState().addNotification(
         'dungeon_complete',
         'Dungeon Complete!',
-        `${dungeonName} cleared successfully!`,
-        rewards,
+        partySize > 0
+          ? `${dungeonName} cleared with ${partySize} companion${partySize > 1 ? 's' : ''}! (${rewardMultiplier.toFixed(2)}x rewards)`
+          : `${dungeonName} cleared successfully!`,
+        multipliedRewards,
         6000 // 6 seconds
       );
 
-      console.log('🎉 Dungeon rewards granted!', rewards);
-    });
-  }
+      console.log('🎉 Dungeon rewards granted!', multipliedRewards);
+      });
+    }
+  });
 };
 
 // Unlock dungeons based on hunter level
@@ -472,6 +633,14 @@ export const checkDungeonUnlocks = (hunterLevel: number) => {
       useDungeonsStore.getState().unlockDungeon(dungeon.id);
     }
   });
+};
+
+// Initialize game systems after all stores are loaded
+// Call this from App.tsx or main.tsx after imports
+export const initializeGame = () => {
+  const hunterLevel = useHunterStore.getState().hunter.level;
+  checkDungeonUnlocks(hunterLevel);
+  console.log('🎮 Game initialized, checked dungeon unlocks for level', hunterLevel);
 };
 
 // Re-export types and helpers

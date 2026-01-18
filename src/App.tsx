@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { QueryClient } from '@ts-query/core';
 import { QueryClientProvider } from '@ts-query/react';
 import { Box, Heading, Button } from '@ts-query/ui-react';
-import { gameStore } from './store/gameStore';
+import { gameStore, initializeGame } from './store/gameStore';
 import { ResourceDisplay } from './components/ResourceDisplay';
 import { TabNavigation, type TabId } from './components/TabNavigation';
 import { HunterTab } from './components/HunterTab';
@@ -11,6 +11,7 @@ import { ResearchTab } from './components/ResearchTab';
 import { ArtifactsTab } from './components/ArtifactsTab';
 import { DungeonsTab } from './components/DungeonsTab';
 import { AlliesTab } from './components/AlliesTab';
+import { ShadowsTab } from './components/ShadowsTab';
 import { DevTools } from './components/DevTools';
 import { NotificationDisplay } from './components/NotificationDisplay';
 import './App.css';
@@ -23,6 +24,11 @@ function GameContent() {
   // Get functions directly from the store
   const tick = gameStore.getState().tick;
   const reset = gameStore.getState().reset;
+
+  // Initialize game systems on mount
+  useEffect(() => {
+    initializeGame();
+  }, []);
 
   // Game loop
   useEffect(() => {
@@ -47,6 +53,8 @@ function GameContent() {
         return <DungeonsTab />;
       case 'allies':
         return <AlliesTab />;
+      case 'shadows':
+        return <ShadowsTab />;
       default:
         return null;
     }

@@ -34,6 +34,7 @@ export interface HunterStats {
   intelligence: number;
   vitality: number;
   sense: number;
+  authority: number; // Controls max party size for allies and shadows
 }
 
 // Hunter state
@@ -88,12 +89,37 @@ export interface Dungeon {
   duration: number; // seconds
   rewards: DungeonRewards;
   unlocked: boolean;
+  companionDropChance?: number; // 0-1, chance to drop ally (alliance) or shadow (solo, requires necromancer)
+  companionNames?: string[]; // Pool of possible companion names from this dungeon
 }
 
 export interface ActiveDungeon {
   dungeonId: string;
   startTime: number; // timestamp
   endTime: number; // timestamp
+  partyIds?: string[]; // IDs of allies or shadows assigned to this dungeon
+}
+
+// Companion system types (Allies & Shadows)
+export type CompanionType = 'ally' | 'shadow';
+
+export interface Companion {
+  id: string;
+  name: string;
+  type: CompanionType;
+  originDungeonId: string; // Which dungeon they came from (only levels from this dungeon)
+  level: number;
+  xp: number;
+  xpToNextLevel: number;
+  // Companions might have stats later, but for now they just multiply rewards
+}
+
+export interface Ally extends Companion {
+  type: 'ally';
+}
+
+export interface Shadow extends Companion {
+  type: 'shadow';
 }
 
 // Artifact system types

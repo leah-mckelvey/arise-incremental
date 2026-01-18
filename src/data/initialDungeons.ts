@@ -26,6 +26,8 @@ export const initialDungeons: Dungeon[] = [
       experience: 100,
     },
     unlocked: true, // Available from start
+    companionDropChance: 0.4, // 40% chance (requires Necromancer unlock)
+    companionNames: ['Goblin Warrior', 'Goblin Shaman', 'Goblin Scout'],
   },
   {
     id: 'instance-dungeon-2',
@@ -46,6 +48,8 @@ export const initialDungeons: Dungeon[] = [
       experience: 500,
     },
     unlocked: false,
+    companionDropChance: 0.35, // 35% chance
+    companionNames: ['Orc Warrior', 'Orc Berserker', 'Orc Shaman', 'Dire Wolf'],
   },
   {
     id: 'instance-dungeon-3',
@@ -66,6 +70,8 @@ export const initialDungeons: Dungeon[] = [
       experience: 1500,
     },
     unlocked: false,
+    companionDropChance: 0.3, // 30% chance
+    companionNames: ['Troll Warrior', 'Ice Bear', 'Stone Golem', 'Yeti'],
   },
 
   // Demon Castle
@@ -88,6 +94,8 @@ export const initialDungeons: Dungeon[] = [
       experience: 4000,
     },
     unlocked: false,
+    companionDropChance: 0.25, // 25% chance
+    companionNames: ['Demon Knight', 'Demon Mage', 'Cerberus', 'Gargoyle'],
   },
 
   // Red Gate
@@ -110,9 +118,11 @@ export const initialDungeons: Dungeon[] = [
       experience: 10000,
     },
     unlocked: false,
+    companionDropChance: 0.2, // 20% chance (elite shadows)
+    companionNames: ['High Orc', 'Ice Elf', 'Naga', 'Wyvern'],
   },
 
-  // Alliance Dungeons (Drop shadows)
+  // Alliance Dungeons (Drop allies)
   {
     id: 'double-dungeon',
     name: '⚔️ Double Dungeon',
@@ -132,6 +142,8 @@ export const initialDungeons: Dungeon[] = [
       experience: 300,
     },
     unlocked: false,
+    companionDropChance: 0.3, // 30% chance to recruit an ally
+    companionNames: ['Yoo Jinho', 'Lee Joohee', 'Kim Sangshik', 'Park Heejin'],
   },
   {
     id: 'c-rank-gate',
@@ -152,6 +164,8 @@ export const initialDungeons: Dungeon[] = [
       experience: 1000,
     },
     unlocked: false,
+    companionDropChance: 0.25, // 25% chance
+    companionNames: ['Cha Hae-In', 'Baek Yoonho', 'Min Byung-Gyu', 'Choi Jong-In'],
   },
   {
     id: 'a-rank-gate',
@@ -172,6 +186,8 @@ export const initialDungeons: Dungeon[] = [
       experience: 6000,
     },
     unlocked: false,
+    companionDropChance: 0.2, // 20% chance (harder dungeon, rarer allies)
+    companionNames: ['Go Gunhee', 'Thomas Andre', 'Liu Zhigang', 'Christopher Reed'],
   },
   {
     id: 'jeju-island',
@@ -192,6 +208,8 @@ export const initialDungeons: Dungeon[] = [
       experience: 20000,
     },
     unlocked: false,
+    companionDropChance: 0.15, // 15% chance (legendary allies)
+    companionNames: ['Goto Ryuji', 'Lennart Niermann', 'Jonas', 'Hwang Dongsoo'],
   },
 ];
 

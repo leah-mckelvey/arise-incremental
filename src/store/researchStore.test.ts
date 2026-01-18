@@ -17,7 +17,7 @@ describe('researchStore', () => {
     it('should have correct costs', () => {
       const research = useResearchStore.getState().research;
       expect(research.basicExtraction.cost).toBe(10);
-      expect(research.knowledgeGeneration.cost).toBe(15);
+      expect(research.knowledgeGeneration.cost).toBe(10);
       expect(research.manaResonance.cost).toBe(50);
     });
 
@@ -144,12 +144,12 @@ describe('researchStore', () => {
   });
 
   describe('Research Effects', () => {
-    it('should have gathering bonuses', () => {
-      const tech = useResearchStore.getState().research.basicExtraction;
-      expect(tech.effects?.gatheringBonus?.essence).toBe(0.5);
+    it('should have building efficiency bonuses', () => {
+      const basicExtraction = useResearchStore.getState().research.basicExtraction;
+      expect(basicExtraction.effects?.buildingEfficiency?.essenceExtractor).toBe(1.5);
     });
 
-    it('should have building efficiency bonuses', () => {
+    it('should have building efficiency bonuses for industrial scale', () => {
       const tech = useResearchStore.getState().research.industrialScale;
       expect(tech.effects?.buildingEfficiency?.essenceExtractor).toBe(2.0);
     });

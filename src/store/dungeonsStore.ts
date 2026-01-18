@@ -6,19 +6,19 @@ const STORAGE_KEY = 'arise-dungeons-state';
 
 export interface DungeonsState {
   dungeons: Dungeon[];
-  activeDungeon: ActiveDungeon | null;
+  activeDungeons: ActiveDungeon[]; // Changed to array for parallel runs
 
   // Actions
-  startDungeon: (dungeonId: string, currentTime: number, onSuccess: () => void) => void;
-  completeDungeon: (currentTime: number, onSuccess: (rewards: DungeonRewards, dungeonName: string) => void) => void;
-  cancelDungeon: () => void;
+  startDungeon: (dungeonId: string, currentTime: number, partyIds: string[], onSuccess: () => void) => void;
+  completeDungeon: (dungeonId: string, currentTime: number, onSuccess: (rewards: DungeonRewards, dungeonName: string, dungeon: Dungeon) => void) => void;
+  cancelDungeon: (dungeonId: string) => void;
   unlockDungeon: (dungeonId: string) => void;
   reset: () => void;
 }
 
 const getInitialState = () => ({
   dungeons: JSON.parse(JSON.stringify(initialDungeons)) as Dungeon[], // Deep copy to avoid mutations
-  activeDungeon: null as ActiveDungeon | null,
+  activeDungeons: [] as ActiveDungeon[],
 });
 
 const loadPersistedState = (): Partial<DungeonsState> | null => {
@@ -37,7 +37,7 @@ const persistState = (state: DungeonsState) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       dungeons: state.dungeons,
-      activeDungeon: state.activeDungeon,
+      activeDungeons: state.activeDungeons,
     }));
   } catch (error) {
     console.error('Failed to persist dungeons state:', error);
@@ -50,15 +50,10 @@ export const useDungeonsStore = createStore<DungeonsState>((set, get) => {
 
   const store: DungeonsState = {
     dungeons: persisted?.dungeons || initialState.dungeons,
-    activeDungeon: persisted?.activeDungeon || initialState.activeDungeon,
+    activeDungeons: persisted?.activeDungeons || initialState.activeDungeons,
 
-    startDungeon: (dungeonId, currentTime, onSuccess) => {
+    startDungeon: (dungeonId, currentTime, partyIds, onSuccess) => {
       const state = get();
-
-      if (state.activeDungeon) {
-        console.warn('Already in a dungeon');
-        return;
-      }
 
       const dungeon = state.dungeons.find((d) => d.id === dungeonId);
       if (!dungeon) {
@@ -71,32 +66,45 @@ export const useDungeonsStore = createStore<DungeonsState>((set, get) => {
         return;
       }
 
+      // Check if any companions in the party are already assigned to another dungeon
+      const busyCompanions = partyIds.filter((companionId) =>
+        state.activeDungeons.some((ad) => ad.partyIds?.includes(companionId))
+      );
+      if (busyCompanions.length > 0) {
+        console.warn('Some companions are already in another dungeon:', busyCompanions);
+        return;
+      }
+
       const activeDungeon: ActiveDungeon = {
         dungeonId,
         startTime: currentTime,
         endTime: currentTime + dungeon.duration * 1000, // Convert to ms
+        partyIds,
       };
 
-      console.log(`🏰 Started dungeon: ${dungeon.name} (${dungeon.duration}s)`);
+      console.log(`🏰 Started dungeon: ${dungeon.name} (${dungeon.duration}s) with ${partyIds.length} companion(s)`);
 
-      set({ activeDungeon });
+      set((state) => ({
+        activeDungeons: [...state.activeDungeons, activeDungeon],
+      }));
       onSuccess();
     },
 
-    completeDungeon: (currentTime, onSuccess) => {
+    completeDungeon: (dungeonId, currentTime, onSuccess) => {
       const state = get();
+      const activeDungeon = state.activeDungeons.find((ad) => ad.dungeonId === dungeonId);
 
-      if (!state.activeDungeon) {
-        console.warn('No active dungeon');
+      if (!activeDungeon) {
+        console.warn('No active dungeon with that ID');
         return;
       }
 
-      if (currentTime < state.activeDungeon.endTime) {
+      if (currentTime < activeDungeon.endTime) {
         console.warn('Dungeon not complete yet');
         return;
       }
 
-      const dungeon = state.dungeons.find((d) => d.id === state.activeDungeon!.dungeonId);
+      const dungeon = state.dungeons.find((d) => d.id === dungeonId);
       if (!dungeon) {
         console.warn('Dungeon not found');
         return;
@@ -107,13 +115,20 @@ export const useDungeonsStore = createStore<DungeonsState>((set, get) => {
 
       const rewards = dungeon.rewards;
       const dungeonName = dungeon.name;
-      set({ activeDungeon: null });
-      onSuccess(rewards, dungeonName);
+
+      // Remove this dungeon from active dungeons
+      set((state) => ({
+        activeDungeons: state.activeDungeons.filter((ad) => ad.dungeonId !== dungeonId),
+      }));
+
+      onSuccess(rewards, dungeonName, dungeon);
     },
 
-    cancelDungeon: () => {
-      console.log('❌ Cancelled dungeon');
-      set({ activeDungeon: null });
+    cancelDungeon: (dungeonId) => {
+      console.log('❌ Cancelled dungeon:', dungeonId);
+      set((state) => ({
+        activeDungeons: state.activeDungeons.filter((ad) => ad.dungeonId !== dungeonId),
+      }));
     },
 
     unlockDungeon: (dungeonId) => {
@@ -131,7 +146,7 @@ export const useDungeonsStore = createStore<DungeonsState>((set, get) => {
       const freshState = getInitialState();
       set({
         dungeons: freshState.dungeons,
-        activeDungeon: freshState.activeDungeon,
+        activeDungeons: freshState.activeDungeons,
       });
     },
   };
@@ -139,7 +154,10 @@ export const useDungeonsStore = createStore<DungeonsState>((set, get) => {
   return store;
 });
 
-useDungeonsStore.subscribe((state) => {
-  persistState(state);
-});
+// Subscribe to persist state changes (wrapped in setTimeout to avoid circular dependency)
+setTimeout(() => {
+  useDungeonsStore.subscribe((state) => {
+    persistState(state);
+  });
+}, 0);
 

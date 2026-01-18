@@ -37,9 +37,9 @@ export const calculateCraftCost = (rank: ArtifactRank, slot: ArtifactSlot): Reso
   const baseCost = rankMultipliers[rank] * slotMultipliers[slot];
 
   return {
-    essence: Math.floor(baseCost * 10),
-    crystals: Math.floor(baseCost * 5),
-    gold: Math.floor(baseCost * 15),
+    essence: Math.floor(baseCost * 3), // Reduced from 10 to 3
+    crystals: Math.floor(baseCost * 15), // Increased from 5 to 15
+    gold: Math.floor(baseCost * 25), // Increased from 15 to 25
     souls: 0, // No souls needed for basic crafting
     attraction: 0,
     gems: 0, // No gems needed for basic crafting

@@ -1,12 +1,19 @@
 import { useHunterQuery } from '../queries/gameQueries';
-import { allocateStat } from '../store/gameStore';
+import { allocateStat, getEffectiveHunterStats } from '../store/gameStore';
+import { useStore } from '@ts-query/react';
+import { useArtifactsStore } from '../store/gameStore';
+import { calculateEquippedStatBonuses } from '../lib/calculations/artifactCalculations';
 import type { HunterStats } from '../store/types';
 import { Box, Heading, Text, Button, Stack } from '@ts-query/ui-react';
 
 export const HunterDisplay = () => {
   const { data: hunter } = useHunterQuery();
+  const equipped = useStore(useArtifactsStore, (state) => state.equipped);
 
   if (!hunter) return null;
+
+  const artifactBonuses = calculateEquippedStatBonuses(equipped);
+  const effectiveStats = getEffectiveHunterStats();
 
   const formatNumber = (num: number) => {
     return Math.floor(num).toLocaleString();
@@ -137,50 +144,63 @@ export const HunterDisplay = () => {
           )}
         </Text>
         <Stack gap={2}>
-          {(Object.keys(hunter.stats) as Array<keyof HunterStats>).map((stat) => (
-            <Box
-              key={stat}
-              p={2.5}
-              bg="var(--bg-tertiary)"
-              rounded="4px"
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                border: '1px solid var(--border-color)',
-              }}
-            >
-              <Box>
-                <Text
-                  fontWeight="bold"
-                  style={{
-                    textTransform: 'capitalize',
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  {stat === 'strength' && '💪'}
-                  {stat === 'agility' && '⚡'}
-                  {stat === 'intelligence' && '🧠'}
-                  {stat === 'vitality' && '❤️'}
-                  {stat === 'sense' && '👁️'}
-                  {' '}{stat}: <span style={{ color: 'var(--accent-teal)' }}>{hunter.stats[stat]}</span>
-                </Text>
-              </Box>
-              <Button
-                onClick={() => allocateStat(stat)}
-                disabled={hunter.statPoints <= 0}
+          {(Object.keys(hunter.stats) as Array<keyof HunterStats>).map((stat) => {
+            const baseStat = hunter.stats[stat];
+            const effectiveStat = effectiveStats[stat];
+            const bonus = artifactBonuses[stat] || 0;
+            const hasBonus = bonus > 0;
+
+            return (
+              <Box
+                key={stat}
+                p={2.5}
+                bg="var(--bg-tertiary)"
+                rounded="4px"
                 style={{
-                  background: hunter.statPoints > 0 ? 'var(--accent-teal)' : 'var(--bg-tertiary)',
-                  color: hunter.statPoints > 0 ? '#000' : 'var(--text-dim)',
-                  border: hunter.statPoints > 0 ? '1px solid var(--accent-teal)' : '1px solid var(--border-color)',
-                  fontWeight: 'bold',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  border: '1px solid var(--border-color)',
                 }}
-                size="sm"
               >
-                +
-              </Button>
-            </Box>
-          ))}
+                <Box>
+                  <Text
+                    fontWeight="bold"
+                    style={{
+                      textTransform: 'capitalize',
+                      color: 'var(--text-primary)',
+                    }}
+                  >
+                    {stat === 'strength' && '💪'}
+                    {stat === 'agility' && '⚡'}
+                    {stat === 'intelligence' && '🧠'}
+                    {stat === 'vitality' && '❤️'}
+                    {stat === 'sense' && '👁️'}
+                    {stat === 'authority' && '👑'}
+                    {' '}{stat}: <span style={{ color: 'var(--accent-teal)' }}>{baseStat}</span>
+                    {hasBonus && (
+                      <span style={{ color: 'var(--accent-gold)', fontSize: '12px' }}>
+                        {' '}→ {effectiveStat} (+{bonus}%)
+                      </span>
+                    )}
+                  </Text>
+                </Box>
+                <Button
+                  onClick={() => allocateStat(stat)}
+                  disabled={hunter.statPoints <= 0}
+                  style={{
+                    background: hunter.statPoints > 0 ? 'var(--accent-teal)' : 'var(--bg-tertiary)',
+                    color: hunter.statPoints > 0 ? '#000' : 'var(--text-dim)',
+                    border: hunter.statPoints > 0 ? '1px solid var(--accent-teal)' : '1px solid var(--border-color)',
+                    fontWeight: 'bold',
+                  }}
+                  size="sm"
+                >
+                  +
+                </Button>
+              </Box>
+            );
+          })}
         </Stack>
       </Box>
     </Box>
