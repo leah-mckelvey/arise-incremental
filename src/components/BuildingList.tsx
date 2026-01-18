@@ -102,6 +102,7 @@ export const BuildingList = () => {
       if (building.increasesCaps.souls) parts.push(`👻 Cap +${building.increasesCaps.souls}`);
       if (building.increasesCaps.attraction) parts.push(`⭐ Cap +${building.increasesCaps.attraction}`);
       if (building.increasesCaps.gems) parts.push(`💠 Cap +${building.increasesCaps.gems}`);
+      if (building.increasesCaps.knowledge) parts.push(`📚 Cap +${building.increasesCaps.knowledge}`);
     }
 
     return parts.length > 0 ? parts.join(', ') : null;
