@@ -520,6 +520,15 @@ export const checkDungeonCompletion = () => {
       // Grant hunter XP
       useHunterStore.getState().addXp(multipliedRewards.experience, (newLevel) => {
         console.log(`🎉 Leveled up to ${newLevel}!`);
+
+        // Recalculate caps when leveling up (for transcendence and stat bonuses)
+        const buildings = useBuildingsStore.getState().buildings;
+        const research = useResearchStore.getState().research;
+        const updatedEffectiveStats = getEffectiveHunterStats();
+        gameStore.setState({
+          resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, research, newLevel, updatedEffectiveStats),
+        });
+
         checkDungeonUnlocks(newLevel);
 
         // Unlock necromancer at level 40

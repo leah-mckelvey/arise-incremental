@@ -5,7 +5,7 @@ import type { ArtifactRank, ArtifactSlot, Artifact } from '../store/types';
 import { canCraftRank, calculateCraftCost, canBlacksmithCraftRank, getMaxCraftableRank } from '../lib/calculations/artifactCalculations';
 import { getTierColor, calculateTierDropRates } from '../lib/lootGenerator';
 import { availableUpgrades, calculateUpgradeCost } from '../data/initialArtifacts';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export const ArtifactsTab = () => {
   const equipped = useStore(useArtifactsStore, (state) => state.equipped);
@@ -19,6 +19,19 @@ export const ArtifactsTab = () => {
   const [selectedArtifact, setSelectedArtifact] = useState<Artifact | null>(null);
   const [craftBulkAmount, setCraftBulkAmount] = useState<1 | 5 | 10 | 100>(1);
   const [upgradeBulkAmount, setUpgradeBulkAmount] = useState<1 | 5 | 10 | 100>(1);
+
+  // Clear selected artifact if it no longer exists in inventory or equipped
+  useEffect(() => {
+    if (selectedArtifact) {
+      const stillExists =
+        inventory.find(a => a.id === selectedArtifact.id) ||
+        Object.values(equipped).find(a => a?.id === selectedArtifact.id);
+
+      if (!stillExists) {
+        setSelectedArtifact(null);
+      }
+    }
+  }, [selectedArtifact, inventory, equipped]);
 
   const slots: Array<{ slot: ArtifactSlot; name: string; icon: string }> = [
     { slot: 'weapon', name: 'Weapon', icon: '⚔️' },
@@ -402,8 +415,8 @@ export const ArtifactsTab = () => {
           inventory.find(a => a.id === selectedArtifact.id) ||
           Object.values(equipped).find(a => a?.id === selectedArtifact.id);
 
+        // If artifact no longer exists, just return null (don't update state during render)
         if (!freshArtifact) {
-          setSelectedArtifact(null);
           return null;
         }
 
