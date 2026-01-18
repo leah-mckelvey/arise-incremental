@@ -141,9 +141,10 @@ export function DungeonsTab() {
 
       // If no named companions selected and Sung Jinwoo is available, he goes
       // Otherwise, the selected named companions lead the party
+      const isSungJinwooAvailable = !isSungJinwooBusy();
       const finalParty = namedCompanionsInParty.length > 0
         ? selectedParty
-        : ['sung-jinwoo', ...selectedParty];
+        : (isSungJinwooAvailable ? ['sung-jinwoo', ...selectedParty] : selectedParty);
 
       startDungeon(selectedDungeon.id, finalParty);
       setSelectedDungeon(null);
@@ -293,7 +294,7 @@ export function DungeonsTab() {
                     </Text>
                   </Box>
                   <Button
-                    onClick={() => cancelDungeon(activeDungeon.dungeonId)}
+                    onClick={() => cancelDungeon(activeDungeon.id)}
                     style={{
                       background: 'var(--danger)',
                       color: '#fff',

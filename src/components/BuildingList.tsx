@@ -58,7 +58,7 @@ export const BuildingList = () => {
     if (building.produces && building.perSecond && building.count > 0) {
       Object.entries(building.produces).forEach(([resource, baseAmount]) => {
         if (baseAmount) {
-          let production = baseAmount * building.perSecond;
+          let production = baseAmount * building.perSecond * building.count;
 
           // Apply all bonuses
           production *= efficiency;
@@ -89,7 +89,8 @@ export const BuildingList = () => {
 
     // XP production
     if (building.xpPerSecond && building.count > 0) {
-      parts.push(`⭐ +${building.xpPerSecond}/s XP`);
+      const totalXpPerSecond = building.xpPerSecond * building.count;
+      parts.push(`⭐ +${totalXpPerSecond.toFixed(2)}/s XP`);
     }
 
     // Cap increases

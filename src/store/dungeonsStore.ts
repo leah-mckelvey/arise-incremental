@@ -10,8 +10,8 @@ export interface DungeonsState {
 
   // Actions
   startDungeon: (dungeonId: string, currentTime: number, partyIds: string[], onSuccess: () => void) => void;
-  completeDungeon: (dungeonId: string, currentTime: number, onSuccess: (rewards: DungeonRewards, dungeonName: string, dungeon: Dungeon) => void) => void;
-  cancelDungeon: (dungeonId: string) => void;
+  completeDungeon: (activeDungeonId: string, currentTime: number, onSuccess: (rewards: DungeonRewards, dungeonName: string, dungeon: Dungeon) => void) => void;
+  cancelDungeon: (activeDungeonId: string) => void;
   unlockDungeon: (dungeonId: string) => void;
   reset: () => void;
 }
@@ -75,7 +75,11 @@ export const useDungeonsStore = createStore<DungeonsState>((set, get) => {
         return;
       }
 
+      // Generate unique ID for this dungeon run
+      const activeDungeonId = `${dungeonId}-${currentTime}-${Math.random().toString(36).substr(2, 9)}`;
+
       const activeDungeon: ActiveDungeon = {
+        id: activeDungeonId,
         dungeonId,
         startTime: currentTime,
         endTime: currentTime + dungeon.duration * 1000, // Convert to ms
@@ -90,9 +94,9 @@ export const useDungeonsStore = createStore<DungeonsState>((set, get) => {
       onSuccess();
     },
 
-    completeDungeon: (dungeonId, currentTime, onSuccess) => {
+    completeDungeon: (activeDungeonId, currentTime, onSuccess) => {
       const state = get();
-      const activeDungeon = state.activeDungeons.find((ad) => ad.dungeonId === dungeonId);
+      const activeDungeon = state.activeDungeons.find((ad) => ad.id === activeDungeonId);
 
       if (!activeDungeon) {
         console.warn('No active dungeon with that ID');
@@ -104,7 +108,7 @@ export const useDungeonsStore = createStore<DungeonsState>((set, get) => {
         return;
       }
 
-      const dungeon = state.dungeons.find((d) => d.id === dungeonId);
+      const dungeon = state.dungeons.find((d) => d.id === activeDungeon.dungeonId);
       if (!dungeon) {
         console.warn('Dungeon not found');
         return;
@@ -118,16 +122,16 @@ export const useDungeonsStore = createStore<DungeonsState>((set, get) => {
 
       // Remove this dungeon from active dungeons
       set((state) => ({
-        activeDungeons: state.activeDungeons.filter((ad) => ad.dungeonId !== dungeonId),
+        activeDungeons: state.activeDungeons.filter((ad) => ad.id !== activeDungeonId),
       }));
 
       onSuccess(rewards, dungeonName, dungeon);
     },
 
-    cancelDungeon: (dungeonId) => {
-      console.log('❌ Cancelled dungeon:', dungeonId);
+    cancelDungeon: (activeDungeonId) => {
+      console.log('❌ Cancelled dungeon:', activeDungeonId);
       set((state) => ({
-        activeDungeons: state.activeDungeons.filter((ad) => ad.dungeonId !== dungeonId),
+        activeDungeons: state.activeDungeons.filter((ad) => ad.id !== activeDungeonId),
       }));
     },
 

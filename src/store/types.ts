@@ -94,6 +94,7 @@ export interface Dungeon {
 }
 
 export interface ActiveDungeon {
+  id: string; // Unique identifier for this dungeon run
   dungeonId: string;
   startTime: number; // timestamp
   endTime: number; // timestamp

@@ -453,8 +453,8 @@ export const startDungeon = (dungeonId: string, partyIds: string[] = []) => {
   });
 };
 
-export const cancelDungeon = (dungeonId: string) => {
-  useDungeonsStore.getState().cancelDungeon(dungeonId);
+export const cancelDungeon = (activeDungeonId: string) => {
+  useDungeonsStore.getState().cancelDungeon(activeDungeonId);
 };
 
 // Check and complete dungeons if time is up (called from tick)
@@ -467,7 +467,7 @@ export const checkDungeonCompletion = () => {
   // Check each active dungeon
   activeDungeons.forEach((activeDungeon) => {
     if (currentTime >= activeDungeon.endTime) {
-      useDungeonsStore.getState().completeDungeon(activeDungeon.dungeonId, currentTime, (rewards, dungeonName, dungeon) => {
+      useDungeonsStore.getState().completeDungeon(activeDungeon.id, currentTime, (rewards, dungeonName, dungeon) => {
       // Calculate companion effectiveness based on their level vs Sung Jinwoo's level
       const hunterLevel = useHunterStore.getState().hunter.level;
       let companionEffectiveness = 0;
