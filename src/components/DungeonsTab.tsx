@@ -146,6 +146,13 @@ export function DungeonsTab() {
         ? selectedParty
         : (isSungJinwooAvailable ? ['sung-jinwoo', ...selectedParty] : selectedParty);
 
+      // Validate that we have a valid leader (Sung Jinwoo or at least one named companion)
+      const hasValidLeader = finalParty.includes('sung-jinwoo') || namedCompanionsInParty.length > 0;
+      if (!hasValidLeader) {
+        console.warn('Cannot start dungeon without a valid leader');
+        return;
+      }
+
       startDungeon(selectedDungeon.id, finalParty);
       setSelectedDungeon(null);
       setSelectedParty([]);
@@ -264,7 +271,7 @@ export function DungeonsTab() {
 
             return (
               <Box
-                key={activeDungeon.dungeonId}
+                key={activeDungeon.id}
                 style={{
                   padding: '15px',
                   background: 'var(--bg-secondary)',

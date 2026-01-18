@@ -125,6 +125,7 @@ export const applyArtifactBonuses = (baseStats: HunterStats, artifactBonuses: Ar
     intelligence: Math.floor(baseStats.intelligence * (1 + (artifactBonuses.intelligence || 0) / 100)),
     vitality: Math.floor(baseStats.vitality * (1 + (artifactBonuses.vitality || 0) / 100)),
     sense: Math.floor(baseStats.sense * (1 + (artifactBonuses.sense || 0) / 100)),
+    authority: baseStats.authority, // Authority is not affected by artifacts
   };
 };
 

@@ -44,6 +44,7 @@ export const BuildingList = () => {
     if (cost.souls > 0) parts.push(`👻 ${formatNumber(cost.souls)}`);
     if (cost.attraction > 0) parts.push(`⭐ ${formatNumber(cost.attraction)}`);
     if (cost.gems > 0) parts.push(`💠 ${formatNumber(cost.gems)}`);
+    if (cost.knowledge > 0) parts.push(`📚 ${formatNumber(cost.knowledge)}`);
     return parts.join(' ');
   };
 
