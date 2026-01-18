@@ -274,13 +274,12 @@ export const getEffectiveHunterStats = (): HunterStats => {
 
 // Coordinated purchase functions that update multiple stores
 export const purchaseBuilding = (buildingId: string) => {
-  const resources = gameStore.getState().resources;
   const research = useResearchStore.getState().research;
   const hunter = useHunterStore.getState().hunter;
   const effectiveStats = getEffectiveHunterStats();
 
-  useBuildingsStore.getState().purchaseBuilding(buildingId, resources, (cost, newBuildings) => {
-    // Get fresh resources in case they changed
+  useBuildingsStore.getState().purchaseBuilding(buildingId, () => gameStore.getState().resources, (cost, newBuildings) => {
+    // Get fresh resources and deduct cost
     const currentResources = gameStore.getState().resources;
     const newResources = deductCost(currentResources, cost);
 
@@ -293,13 +292,12 @@ export const purchaseBuilding = (buildingId: string) => {
 };
 
 export const purchaseBuildingBulk = (buildingId: string, quantity: number) => {
-  const resources = gameStore.getState().resources;
   const research = useResearchStore.getState().research;
   const hunter = useHunterStore.getState().hunter;
   const effectiveStats = getEffectiveHunterStats();
 
-  useBuildingsStore.getState().purchaseBuildingBulk(buildingId, quantity, resources, (cost, newBuildings) => {
-    // Get fresh resources in case they changed
+  useBuildingsStore.getState().purchaseBuildingBulk(buildingId, quantity, () => gameStore.getState().resources, (cost, newBuildings) => {
+    // Get fresh resources and deduct cost
     const currentResources = gameStore.getState().resources;
     const newResources = deductCost(currentResources, cost);
 

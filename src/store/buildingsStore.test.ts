@@ -70,7 +70,7 @@ describe('buildingsStore', () => {
       const resources = createResources({ essence: 100 });
       let purchaseSucceeded = false;
 
-      useBuildingsStore.getState().purchaseBuilding('essenceExtractor', resources, (cost, newBuildings) => {
+      useBuildingsStore.getState().purchaseBuilding('essenceExtractor', () => resources, (cost, newBuildings) => {
         purchaseSucceeded = true;
         expect(newBuildings.essenceExtractor.count).toBe(1);
         expect(cost.essence).toBe(10);
@@ -84,7 +84,7 @@ describe('buildingsStore', () => {
       const resources = createResources({ essence: 5 });
       let callbackCalled = false;
 
-      useBuildingsStore.getState().purchaseBuilding('essenceExtractor', resources, () => {
+      useBuildingsStore.getState().purchaseBuilding('essenceExtractor', () => resources, () => {
         callbackCalled = true;
       });
 
@@ -96,7 +96,7 @@ describe('buildingsStore', () => {
       const resources = createResources({ essence: 1000 });
       let callbackCalled = false;
 
-      useBuildingsStore.getState().purchaseBuilding('invalidBuilding', resources, () => {
+      useBuildingsStore.getState().purchaseBuilding('invalidBuilding', () => resources, () => {
         callbackCalled = true;
       });
 
@@ -108,17 +108,17 @@ describe('buildingsStore', () => {
       const costs: number[] = [];
 
       // First purchase
-      useBuildingsStore.getState().purchaseBuilding('essenceExtractor', resources, (cost) => {
+      useBuildingsStore.getState().purchaseBuilding('essenceExtractor', () => resources, (cost) => {
         costs.push(cost.essence);
       });
 
       // Second purchase
-      useBuildingsStore.getState().purchaseBuilding('essenceExtractor', resources, (cost) => {
+      useBuildingsStore.getState().purchaseBuilding('essenceExtractor', () => resources, (cost) => {
         costs.push(cost.essence);
       });
 
       // Third purchase
-      useBuildingsStore.getState().purchaseBuilding('essenceExtractor', resources, (cost) => {
+      useBuildingsStore.getState().purchaseBuilding('essenceExtractor', () => resources, (cost) => {
         costs.push(cost.essence);
       });
 

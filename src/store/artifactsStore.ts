@@ -6,6 +6,9 @@ import { rollTier, rollStats, generateArtifactName, getTierMaxUpgrades } from '.
 
 const STORAGE_KEY = 'arise-artifacts-state';
 
+// Counter to ensure unique artifact IDs even when crafted in the same millisecond
+let artifactIdCounter = 0;
+
 export interface ArtifactsState {
   equipped: EquippedArtifacts;
   inventory: Artifact[];
@@ -90,8 +93,9 @@ export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
       const name = generateArtifactName(slot, tier, baseStats);
 
       // Create new artifact with loot system
+      // Use counter to prevent ID collisions when crafting multiple artifacts in same millisecond
       const newArtifact: Artifact = {
-        id: `${slot}-${rank}-${tier}-${Date.now()}`,
+        id: `${slot}-${rank}-${tier}-${Date.now()}-${artifactIdCounter++}`,
         name,
         description: `A ${tier} ${rank}-rank ${slot} crafted by the blacksmith`,
         rank,

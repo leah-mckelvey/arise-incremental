@@ -20,8 +20,8 @@ export interface Building {
 
 export interface BuildingsState {
   buildings: Record<string, Building>;
-  purchaseBuilding: (buildingId: string, resources: Resources, onSuccess: (cost: Resources, newBuildings: Record<string, Building>) => void) => void;
-  purchaseBuildingBulk: (buildingId: string, quantity: number, resources: Resources, onSuccess: (cost: Resources, newBuildings: Record<string, Building>) => void) => void;
+  purchaseBuilding: (buildingId: string, getResources: () => Resources, onSuccess: (cost: Resources, newBuildings: Record<string, Building>) => void) => void;
+  purchaseBuildingBulk: (buildingId: string, quantity: number, getResources: () => Resources, onSuccess: (cost: Resources, newBuildings: Record<string, Building>) => void) => void;
   reset: () => void;
 }
 
@@ -58,11 +58,13 @@ export const useBuildingsStore = createStore<BuildingsState>((set, get) => {
   const store: BuildingsState = {
     ...initialState,
 
-    purchaseBuilding: (buildingId, resources, onSuccess) => {
+    purchaseBuilding: (buildingId, getResources, onSuccess) => {
       const building = get().buildings[buildingId];
       if (!building) return;
 
       const cost = calculateBuildingCost(building);
+      // Get fresh resources at the moment of affordability check
+      const resources = getResources();
       if (!canAffordCost(resources, cost)) return;
 
       const newBuildings = {
@@ -82,11 +84,13 @@ export const useBuildingsStore = createStore<BuildingsState>((set, get) => {
       onSuccess(cost, newBuildings);
     },
 
-    purchaseBuildingBulk: (buildingId, quantity, resources, onSuccess) => {
+    purchaseBuildingBulk: (buildingId, quantity, getResources, onSuccess) => {
       const building = get().buildings[buildingId];
       if (!building || quantity <= 0) return;
 
       const cost = calculateBulkBuildingCost(building, quantity);
+      // Get fresh resources at the moment of affordability check
+      const resources = getResources();
       if (!canAffordCost(resources, cost)) return;
 
       const newBuildings = {
