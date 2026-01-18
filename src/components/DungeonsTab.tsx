@@ -571,44 +571,58 @@ export function DungeonsTab() {
 
             {/* Action Buttons */}
             <Box style={{ display: 'flex', gap: '10px' }}>
-              <Button
-                onClick={handleStartDungeon}
-                style={{
-                  flex: 1,
-                  background: 'var(--accent-teal)',
-                  color: '#000',
-                  border: '1px solid var(--accent-teal)',
-                  fontWeight: 'bold',
-                  padding: '12px',
-                }}
-              >
-                {(() => {
-                  const namedInParty = selectedParty.filter(id => {
-                    if (selectedDungeon.type === 'alliance') {
-                      const ally = allies.find(a => a.id === id);
-                      return ally && ally.originDungeonId !== 'recruited';
-                    } else {
-                      const shadow = shadows.find(s => s.id === id);
-                      return shadow && shadow.originDungeonId !== 'recruited';
-                    }
-                  });
+              {(() => {
+                const namedInParty = selectedParty.filter(id => {
+                  if (selectedDungeon.type === 'alliance') {
+                    const ally = allies.find(a => a.id === id);
+                    return ally && ally.originDungeonId !== 'recruited';
+                  } else {
+                    const shadow = shadows.find(s => s.id === id);
+                    return shadow && shadow.originDungeonId !== 'recruited';
+                  }
+                });
 
-                  if (namedInParty.length === 0) {
-                    // Sung Jinwoo leads
-                    return selectedParty.length === 0
+                const isSungJinwooAvailable = !isSungJinwooBusy();
+                const hasValidLeader = isSungJinwooAvailable || namedInParty.length > 0;
+
+                let buttonText = '';
+                if (namedInParty.length === 0) {
+                  // Sung Jinwoo would lead
+                  if (!isSungJinwooAvailable) {
+                    buttonText = '⚔️ Sung Jinwoo is Busy';
+                  } else {
+                    buttonText = selectedParty.length === 0
                       ? '⚔️ Start Solo (Sung Jinwoo)'
                       : `⚔️ Sung Jinwoo + ${selectedParty.length} support`;
-                  } else {
-                    // Named companions lead
-                    const supportCount = selectedParty.length - namedInParty.length;
-                    if (supportCount === 0) {
-                      return `⚔️ Start with ${namedInParty.length} leader${namedInParty.length > 1 ? 's' : ''}`;
-                    } else {
-                      return `⚔️ ${namedInParty.length} leader${namedInParty.length > 1 ? 's' : ''} + ${supportCount} support`;
-                    }
                   }
-                })()}
-              </Button>
+                } else {
+                  // Named companions lead
+                  const supportCount = selectedParty.length - namedInParty.length;
+                  if (supportCount === 0) {
+                    buttonText = `⚔️ Start with ${namedInParty.length} leader${namedInParty.length > 1 ? 's' : ''}`;
+                  } else {
+                    buttonText = `⚔️ ${namedInParty.length} leader${namedInParty.length > 1 ? 's' : ''} + ${supportCount} support`;
+                  }
+                }
+
+                return (
+                  <Button
+                    onClick={handleStartDungeon}
+                    disabled={!hasValidLeader}
+                    style={{
+                      flex: 1,
+                      background: hasValidLeader ? 'var(--accent-teal)' : 'var(--bg-tertiary)',
+                      color: hasValidLeader ? '#000' : 'var(--text-dim)',
+                      border: hasValidLeader ? '1px solid var(--accent-teal)' : '1px solid var(--border-color)',
+                      fontWeight: 'bold',
+                      padding: '12px',
+                    }}
+                  >
+                    {buttonText}
+                  </Button>
+                );
+              })()}
+
               <Button
                 onClick={handleCancelPartySelection}
                 style={{
