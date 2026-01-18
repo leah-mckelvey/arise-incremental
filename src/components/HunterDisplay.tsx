@@ -1,4 +1,4 @@
-import { useHunterQuery } from '../queries/gameQueries';
+import { useHunterQuery, useXpRateQuery } from '../queries/gameQueries';
 import { allocateStat, getEffectiveHunterStats } from '../store/gameStore';
 import { useStore } from '@ts-query/react';
 import { useArtifactsStore } from '../store/gameStore';
@@ -8,6 +8,7 @@ import { Box, Heading, Text, Button, Stack } from '@ts-query/ui-react';
 
 export const HunterDisplay = () => {
   const { data: hunter } = useHunterQuery();
+  const { data: xpRate } = useXpRateQuery();
   const equipped = useStore(useArtifactsStore, (state) => state.equipped);
 
   if (!hunter) return null;
@@ -17,6 +18,10 @@ export const HunterDisplay = () => {
 
   const formatNumber = (num: number) => {
     return Math.floor(num).toLocaleString();
+  };
+
+  const formatRate = (rate: number) => {
+    return rate > 0 ? `+${rate.toFixed(2)}/s` : '';
   };
 
   const xpPercentage = (hunter.xp / hunter.xpToNextLevel) * 100;
@@ -73,13 +78,20 @@ export const HunterDisplay = () => {
 
       {/* XP Bar */}
       <Box mb={4}>
-        <Box mb={1} style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <Box mb={1} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text fontSize="14px" fontWeight="bold" style={{ color: 'var(--text-primary)' }}>
             ✨ Experience
           </Text>
-          <Text fontSize="14px" style={{ color: 'var(--text-secondary)' }}>
-            {formatNumber(hunter.xp)} / {formatNumber(hunter.xpToNextLevel)}
-          </Text>
+          <Box style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            {xpRate && xpRate > 0 && (
+              <Text fontSize="11px" style={{ color: 'var(--accent-teal)' }}>
+                {formatRate(xpRate)}
+              </Text>
+            )}
+            <Text fontSize="14px" style={{ color: 'var(--text-secondary)' }}>
+              {formatNumber(hunter.xp)} / {formatNumber(hunter.xpToNextLevel)}
+            </Text>
+          </Box>
         </Box>
         <Box
           style={{

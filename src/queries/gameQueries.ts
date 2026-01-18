@@ -119,3 +119,18 @@ export const useResearchQuery = () => {
   const research = useStore(useResearchStore, (state) => state.research);
   return { data: research };
 };
+
+export const useXpRateQuery = () => {
+  const buildings = useStore(useBuildingsStore, (state) => state.buildings);
+
+  const xpRate = useMemo(() => {
+    return Object.values(buildings).reduce((acc, building: Building) => {
+      if (building.xpPerSecond && building.count > 0) {
+        return acc + building.xpPerSecond * building.count;
+      }
+      return acc;
+    }, 0);
+  }, [buildings]);
+
+  return { data: xpRate };
+};
