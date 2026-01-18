@@ -223,13 +223,7 @@ export const gameStore = createStore<GameState>((set, get) => {
         },
 
         reset: () => {
-          set({
-            resources: createResources(),
-            resourceCaps: createResourceCaps(),
-            lastUpdate: Date.now(),
-          });
-          persistState(get());
-          // Reset all substores
+          // Reset all substores first
           useBuildingsStore.getState().reset();
           useResearchStore.getState().reset();
           useHunterStore.getState().reset();
@@ -237,6 +231,19 @@ export const gameStore = createStore<GameState>((set, get) => {
           useDungeonsStore.getState().reset();
           useAlliesStore.getState().reset();
           useShadowsStore.getState().reset();
+
+          // Recalculate caps with fresh hunter stats and buildings
+          const buildings = useBuildingsStore.getState().buildings;
+          const research = useResearchStore.getState().research;
+          const hunter = useHunterStore.getState().hunter;
+          const effectiveStats = getEffectiveHunterStats();
+
+          set({
+            resources: createResources(),
+            resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, research, hunter.level, effectiveStats),
+            lastUpdate: Date.now(),
+          });
+          persistState(get());
         },
 
         devFillResources: () => {
@@ -648,6 +655,16 @@ export const checkDungeonUnlocks = (hunterLevel: number) => {
 // Call this from App.tsx or main.tsx after imports
 export const initializeGame = () => {
   const hunterLevel = useHunterStore.getState().hunter.level;
+  const buildings = useBuildingsStore.getState().buildings;
+  const research = useResearchStore.getState().research;
+  const effectiveStats = getEffectiveHunterStats();
+
+  // Recalculate resource caps with hunter stats, research, and building bonuses
+  // This ensures caps are correct from the first tick/gather
+  gameStore.setState({
+    resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, research, hunterLevel, effectiveStats),
+  });
+
   checkDungeonUnlocks(hunterLevel);
   console.log('🎮 Game initialized, checked dungeon unlocks for level', hunterLevel);
 };

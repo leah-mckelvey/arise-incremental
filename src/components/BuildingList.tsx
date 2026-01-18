@@ -82,7 +82,7 @@ export const BuildingList = () => {
             production *= (1 + avgStat / 200);
           }
 
-          const icon = resource === 'essence' ? '🔮' : resource === 'crystals' ? '💎' : resource === 'gold' ? '💰' : resource === 'souls' ? '👻' : resource === 'attraction' ? '⭐' : '💠';
+          const icon = resource === 'essence' ? '🔮' : resource === 'crystals' ? '💎' : resource === 'gold' ? '💰' : resource === 'souls' ? '👻' : resource === 'attraction' ? '⭐' : resource === 'knowledge' ? '📚' : '💠';
           parts.push(`${icon} +${production.toFixed(2)}/s`);
         }
       });
