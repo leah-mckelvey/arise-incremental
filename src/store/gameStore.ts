@@ -310,12 +310,11 @@ export const purchaseBuildingBulk = (buildingId: string, quantity: number) => {
 };
 
 export const purchaseResearch = (researchId: string) => {
-  const resources = gameStore.getState().resources;
   const buildings = useBuildingsStore.getState().buildings;
   const hunter = useHunterStore.getState().hunter;
   const effectiveStats = getEffectiveHunterStats();
 
-  useResearchStore.getState().purchaseResearch(researchId, resources.knowledge, (cost, newResearch) => {
+  useResearchStore.getState().purchaseResearch(researchId, () => gameStore.getState().resources.knowledge, (cost, newResearch) => {
     // Get fresh resources in case they changed
     const currentResources = gameStore.getState().resources;
 
@@ -421,10 +420,11 @@ export const upgradeArtifactBulk = (artifactId: string, upgradeId: string, quant
 export const destroyArtifact = (artifactId: string) => {
   useArtifactsStore.getState().destroyArtifact(artifactId, (essenceGain) => {
     const currentResources = gameStore.getState().resources;
+    const currentCaps = gameStore.getState().resourceCaps;
     gameStore.setState({
       resources: {
         ...currentResources,
-        essence: currentResources.essence + essenceGain,
+        essence: Math.min(currentCaps.essence, currentResources.essence + essenceGain),
       },
     });
   });
@@ -433,10 +433,11 @@ export const destroyArtifact = (artifactId: string) => {
 export const destroyArtifactsUnderRank = (maxRank: 'E' | 'D' | 'C' | 'B' | 'A' | 'S') => {
   useArtifactsStore.getState().destroyArtifactsUnderRank(maxRank, (essenceGain, count) => {
     const currentResources = gameStore.getState().resources;
+    const currentCaps = gameStore.getState().resourceCaps;
     gameStore.setState({
       resources: {
         ...currentResources,
-        essence: currentResources.essence + essenceGain,
+        essence: Math.min(currentCaps.essence, currentResources.essence + essenceGain),
       },
     });
     console.log(`✅ Destroyed ${count} artifacts for ${essenceGain} essence`);
@@ -501,17 +502,18 @@ export const checkDungeonCompletion = () => {
         experience: Math.floor(rewards.experience * rewardMultiplier),
       };
 
-      // Grant all rewards
+      // Grant all rewards (clamped to caps)
       const currentResources = gameStore.getState().resources;
+      const currentCaps = gameStore.getState().resourceCaps;
       gameStore.setState({
         resources: {
-          essence: currentResources.essence + multipliedRewards.essence,
-          crystals: currentResources.crystals + multipliedRewards.crystals,
-          gold: currentResources.gold + multipliedRewards.gold,
-          souls: currentResources.souls + multipliedRewards.souls,
-          attraction: currentResources.attraction + multipliedRewards.attraction,
-          gems: currentResources.gems + multipliedRewards.gems,
-          knowledge: currentResources.knowledge + multipliedRewards.knowledge,
+          essence: Math.min(currentCaps.essence, currentResources.essence + multipliedRewards.essence),
+          crystals: Math.min(currentCaps.crystals, currentResources.crystals + multipliedRewards.crystals),
+          gold: Math.min(currentCaps.gold, currentResources.gold + multipliedRewards.gold),
+          souls: Math.min(currentCaps.souls, currentResources.souls + multipliedRewards.souls),
+          attraction: Math.min(currentCaps.attraction, currentResources.attraction + multipliedRewards.attraction),
+          gems: Math.min(currentCaps.gems, currentResources.gems + multipliedRewards.gems),
+          knowledge: Math.min(currentCaps.knowledge, currentResources.knowledge + multipliedRewards.knowledge),
         },
       });
 

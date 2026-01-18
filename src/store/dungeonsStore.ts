@@ -4,6 +4,9 @@ import { initialDungeons } from '../data/initialDungeons';
 
 const STORAGE_KEY = 'arise-dungeons-state';
 
+// Counter to ensure unique dungeon IDs even when started in the same millisecond
+let dungeonIdCounter = 0;
+
 export interface DungeonsState {
   dungeons: Dungeon[];
   activeDungeons: ActiveDungeon[]; // Changed to array for parallel runs
@@ -75,8 +78,8 @@ export const useDungeonsStore = createStore<DungeonsState>((set, get) => {
         return;
       }
 
-      // Generate unique ID for this dungeon run
-      const activeDungeonId = `${dungeonId}-${currentTime}-${Math.random().toString(36).substr(2, 9)}`;
+      // Generate unique ID for this dungeon run (with counter to prevent collisions)
+      const activeDungeonId = `${dungeonId}-${currentTime}-${dungeonIdCounter++}`;
 
       const activeDungeon: ActiveDungeon = {
         id: activeDungeonId,

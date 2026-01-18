@@ -27,7 +27,7 @@ export interface Research {
 
 export interface ResearchState {
   research: Record<string, Research>;
-  purchaseResearch: (researchId: string, knowledge: number, onSuccess: (cost: number, newResearch: Record<string, Research>) => void) => void;
+  purchaseResearch: (researchId: string, getKnowledge: () => number, onSuccess: (cost: number, newResearch: Record<string, Research>) => void) => void;
   reset: () => void;
 }
 
@@ -65,10 +65,13 @@ export const useResearchStore = createStore<ResearchState>((set, get) => {
   const store: ResearchState = {
     ...initialState,
 
-    purchaseResearch: (researchId, knowledge, onSuccess) => {
+    purchaseResearch: (researchId, getKnowledge, onSuccess) => {
       const research = get().research[researchId];
       if (!research) return;
       if (research.researched) return;
+
+      // Get fresh knowledge at the moment of affordability check
+      const knowledge = getKnowledge();
       if (knowledge < research.cost) return;
 
       // Check prerequisites

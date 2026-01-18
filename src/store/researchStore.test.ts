@@ -33,7 +33,7 @@ describe('researchStore', () => {
     it('should research tech when knowledge is sufficient and no prerequisites', () => {
       let purchaseSucceeded = false;
 
-      useResearchStore.getState().purchaseResearch('basicExtraction', 100, (cost, newResearch) => {
+      useResearchStore.getState().purchaseResearch('basicExtraction', () => 100, (cost, newResearch) => {
         purchaseSucceeded = true;
         expect(newResearch.basicExtraction.researched).toBe(true);
         expect(cost).toBe(10);
@@ -46,7 +46,7 @@ describe('researchStore', () => {
     it('should not research when knowledge is insufficient', () => {
       let callbackCalled = false;
 
-      useResearchStore.getState().purchaseResearch('basicExtraction', 5, () => {
+      useResearchStore.getState().purchaseResearch('basicExtraction', () => 5, () => {
         callbackCalled = true;
       });
 
@@ -57,7 +57,7 @@ describe('researchStore', () => {
     it('should not research when prerequisites are not met', () => {
       let callbackCalled = false;
 
-      useResearchStore.getState().purchaseResearch('manaResonance', 100, () => {
+      useResearchStore.getState().purchaseResearch('manaResonance', () => 100, () => {
         callbackCalled = true;
       });
 
@@ -79,7 +79,7 @@ describe('researchStore', () => {
 
       let purchaseSucceeded = false;
 
-      useResearchStore.getState().purchaseResearch('manaResonance', 100, (cost, newResearch) => {
+      useResearchStore.getState().purchaseResearch('manaResonance', () => 100, (cost, newResearch) => {
         purchaseSucceeded = true;
         expect(newResearch.manaResonance.researched).toBe(true);
       });
@@ -134,7 +134,7 @@ describe('researchStore', () => {
 
       let purchaseSucceeded = false;
 
-      useResearchStore.getState().purchaseResearch('shadowEconomy', 1000, (cost, newResearch) => {
+      useResearchStore.getState().purchaseResearch('shadowEconomy', () => 1000, (cost, newResearch) => {
         purchaseSucceeded = true;
         expect(newResearch.shadowEconomy.researched).toBe(true);
       });

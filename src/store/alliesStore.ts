@@ -3,6 +3,9 @@ import type { Ally } from './types';
 
 const STORAGE_KEY = 'arise-allies-state';
 
+// Counter to ensure unique ally IDs even when recruited in the same millisecond
+let allyIdCounter = 0;
+
 export interface AlliesState {
   allies: Ally[];
 
@@ -61,7 +64,7 @@ export const useAlliesStore = createStore<AlliesState>((set, get) => {
       }
 
       const newAlly: Ally = {
-        id: `ally-${Date.now()}-${Math.random()}`,
+        id: `ally-${Date.now()}-${allyIdCounter++}`,
         name,
         type: 'ally',
         originDungeonId: dungeonId,
@@ -81,7 +84,7 @@ export const useAlliesStore = createStore<AlliesState>((set, get) => {
     recruitGenericAlly: (name, rank) => {
       // Generic allies can have multiples, so no duplicate check
       const newAlly: Ally = {
-        id: `ally-${Date.now()}-${Math.random()}`,
+        id: `ally-${Date.now()}-${allyIdCounter++}`,
         name: `${name} #${get().allies.filter(a => a.name.startsWith(name)).length + 1}`,
         type: 'ally',
         originDungeonId: 'recruited', // Mark as recruited with attraction

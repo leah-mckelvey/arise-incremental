@@ -1,6 +1,9 @@
 import { createStore } from '@ts-query/core';
 import type { Notification, NotificationType, DungeonRewards } from './types';
 
+// Counter to ensure unique notification IDs even when created in the same millisecond
+let notificationIdCounter = 0;
+
 export interface NotificationsState {
   notifications: Notification[];
   
@@ -21,7 +24,7 @@ export const useNotificationsStore = createStore<NotificationsState>((set, get) 
     notifications: [],
 
     addNotification: (type, title, message, rewards, duration = 5000) => {
-      const id = `notification-${Date.now()}-${Math.random()}`;
+      const id = `notification-${Date.now()}-${notificationIdCounter++}`;
       const notification: Notification = {
         id,
         type,

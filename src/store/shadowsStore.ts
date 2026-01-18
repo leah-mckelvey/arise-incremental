@@ -3,6 +3,9 @@ import type { Shadow } from './types';
 
 const STORAGE_KEY = 'arise-shadows-state';
 
+// Counter to ensure unique shadow IDs even when extracted in the same millisecond
+let shadowIdCounter = 0;
+
 export interface ShadowsState {
   shadows: Shadow[];
   necromancerUnlocked: boolean; // Unlocks at level 40
@@ -69,7 +72,7 @@ export const useShadowsStore = createStore<ShadowsState>((set, get) => {
       }
 
       const newShadow: Shadow = {
-        id: `shadow-${Date.now()}-${Math.random()}`,
+        id: `shadow-${Date.now()}-${shadowIdCounter++}`,
         name,
         type: 'shadow',
         originDungeonId: dungeonId,
