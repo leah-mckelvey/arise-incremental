@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { useStore } from '@ts-query/react';
 import { useResourcesQuery, useAllResourceRatesQuery, useResourceCapsQuery, useBuildingsQuery, useResearchQuery, useHunterQuery } from '../queries/gameQueries';
 import { Box, Heading, Text, Stack } from '@ts-query/ui-react';
 import type { Resources } from '../store/gameStore';
-import { getEffectiveHunterStats } from '../store/gameStore';
+import { getEffectiveHunterStats, useArtifactsStore } from '../store/gameStore';
 import { calculateBuildingEfficiency, calculateBuildingSynergy, calculateGlobalProductionMultiplier } from '../lib/calculations/resourceCalculations';
 
 export const ResourceDisplay = () => {
@@ -12,10 +13,13 @@ export const ResourceDisplay = () => {
   const { data: buildings } = useBuildingsQuery();
   const { data: research } = useResearchQuery();
   const { data: hunter } = useHunterQuery();
+  // Subscribe to artifacts store to re-render when artifacts change
+  useStore(useArtifactsStore, (state) => state.equipped);
   const [expandedResource, setExpandedResource] = useState<keyof Resources | null>(null);
 
   if (!resources || !caps || !rates || !buildings || !research || !hunter) return null;
 
+  // effectiveStats will now update when artifacts change because we're subscribed to artifacts store
   const effectiveStats = getEffectiveHunterStats();
   const globalMultiplier = calculateGlobalProductionMultiplier(research, resources, hunter.level);
 

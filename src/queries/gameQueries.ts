@@ -55,7 +55,7 @@ export const useAllResourceRatesQuery = () => {
   const resources = useStore(gameStore, (state) => state.resources);
   const hunter = useStore(useHunterStore, (state) => state.hunter);
   // Subscribe to artifacts to re-calculate when artifacts change
-  useStore(useArtifactsStore, (state) => state.equipped);
+  const equipped = useStore(useArtifactsStore, (state) => state.equipped);
 
   const rates = useMemo(() => {
     const result: Record<keyof Resources, number> = {
@@ -115,7 +115,9 @@ export const useAllResourceRatesQuery = () => {
     });
 
     return result;
-  }, [buildings, research, resources, hunter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buildings, research, resources, hunter, equipped]);
+  // Note: equipped is needed because getEffectiveHunterStats() reads from artifacts store
 
   return { data: rates };
 };

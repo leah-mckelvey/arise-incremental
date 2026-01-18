@@ -1,4 +1,5 @@
-import { gameStore, getEffectiveHunterStats } from '../store/gameStore';
+import { useStore } from '@ts-query/react';
+import { gameStore, getEffectiveHunterStats, useArtifactsStore } from '../store/gameStore';
 import { useHunterQuery, useResearchQuery } from '../queries/gameQueries';
 import { calculateGatherAmount, calculateGatherXp } from '../lib/calculations/resourceCalculations';
 import { Box, Heading, Button, Text } from '@ts-query/ui-react';
@@ -8,9 +9,12 @@ export const GatheringActions = () => {
   const gatherResource = gameStore.getState().gatherResource;
   const { data: hunter } = useHunterQuery();
   const { data: research } = useResearchQuery();
+  // Subscribe to artifacts store to re-render when artifacts change
+  useStore(useArtifactsStore, (state) => state.equipped);
 
   if (!hunter || !research) return null;
 
+  // effectiveStats will now update when artifacts change because we're subscribed to artifacts store
   const effectiveStats = getEffectiveHunterStats();
 
   // Calculate actual gather amounts using the same function as the actual gathering

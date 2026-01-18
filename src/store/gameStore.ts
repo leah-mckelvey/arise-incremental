@@ -155,18 +155,7 @@ export const gameStore = createStore<GameState>((set, get) => {
 
           // Add XP for gathering
           const xpGain = calculateGatherXp(resource, effectiveStats);
-          useHunterStore.getState().addXp(xpGain, (newLevel) => {
-            // Recalculate caps when leveling up (for transcendence and stat bonuses)
-            const buildings = useBuildingsStore.getState().buildings;
-            const research = useResearchStore.getState().research;
-            const updatedEffectiveStats = getEffectiveHunterStats();
-            set({
-              resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, research, newLevel, updatedEffectiveStats),
-            });
-
-            // Check for dungeon unlocks
-            checkDungeonUnlocks(newLevel);
-          });
+          useHunterStore.getState().addXp(xpGain, handleLevelUp);
         },
 
         tick: () => {
@@ -208,17 +197,7 @@ export const gameStore = createStore<GameState>((set, get) => {
 
           // Apply XP gain and recalculate caps on level up
           if (xpGain > 0) {
-            useHunterStore.getState().addXp(xpGain, (newLevel) => {
-              const buildings = useBuildingsStore.getState().buildings;
-              const research = useResearchStore.getState().research;
-              const updatedEffectiveStats = getEffectiveHunterStats();
-              set({
-                resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, research, newLevel, updatedEffectiveStats),
-              });
-
-              // Check for dungeon unlocks
-              checkDungeonUnlocks(newLevel);
-            });
+            useHunterStore.getState().addXp(xpGain, handleLevelUp);
           }
         },
 
@@ -527,21 +506,7 @@ export const checkDungeonCompletion = () => {
       // Grant hunter XP
       useHunterStore.getState().addXp(multipliedRewards.experience, (newLevel) => {
         console.log(`🎉 Leveled up to ${newLevel}!`);
-
-        // Recalculate caps when leveling up (for transcendence and stat bonuses)
-        const buildings = useBuildingsStore.getState().buildings;
-        const research = useResearchStore.getState().research;
-        const updatedEffectiveStats = getEffectiveHunterStats();
-        gameStore.setState({
-          resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, research, newLevel, updatedEffectiveStats),
-        });
-
-        checkDungeonUnlocks(newLevel);
-
-        // Unlock necromancer at level 40
-        if (newLevel >= 40 && !useShadowsStore.getState().necromancerUnlocked) {
-          useShadowsStore.getState().unlockNecromancer();
-        }
+        handleLevelUp(newLevel);
       });
 
       // Grant XP to companions in party
@@ -651,6 +616,31 @@ export const checkDungeonUnlocks = (hunterLevel: number) => {
   });
 };
 
+// Check and unlock necromancer at level 40
+const checkNecromancerUnlock = (hunterLevel: number) => {
+  if (hunterLevel >= 40 && !useShadowsStore.getState().necromancerUnlocked) {
+    useShadowsStore.getState().unlockNecromancer();
+  }
+};
+
+// Centralized level-up handler - call this from all level-up paths
+const handleLevelUp = (newLevel: number) => {
+  const buildings = useBuildingsStore.getState().buildings;
+  const research = useResearchStore.getState().research;
+  const updatedEffectiveStats = getEffectiveHunterStats();
+
+  // Recalculate resource caps with new level
+  gameStore.setState({
+    resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, research, newLevel, updatedEffectiveStats),
+  });
+
+  // Check for dungeon unlocks
+  checkDungeonUnlocks(newLevel);
+
+  // Check for necromancer unlock
+  checkNecromancerUnlock(newLevel);
+};
+
 // Initialize game systems after all stores are loaded
 // Call this from App.tsx or main.tsx after imports
 export const initializeGame = () => {
@@ -666,6 +656,7 @@ export const initializeGame = () => {
   });
 
   checkDungeonUnlocks(hunterLevel);
+  checkNecromancerUnlock(hunterLevel);
   console.log('🎮 Game initialized, checked dungeon unlocks for level', hunterLevel);
 };
 
