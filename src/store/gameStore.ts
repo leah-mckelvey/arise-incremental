@@ -66,7 +66,7 @@ const initialState = {
   lastUpdate: Date.now(),
 };
 
-// Deep merge helper
+// Deep merge helper - properly merges nested objects like resources and resourceCaps
 const deepMerge = <T extends Record<string, unknown>>(
   target: T,
   source: Partial<T>
@@ -74,7 +74,25 @@ const deepMerge = <T extends Record<string, unknown>>(
   const result = { ...target };
   for (const key in source) {
     if (source[key] !== undefined) {
-      result[key] = source[key] as T[Extract<keyof T, string>];
+      const sourceValue = source[key];
+      const targetValue = result[key];
+
+      // If both are plain objects, merge them recursively
+      if (
+        sourceValue &&
+        typeof sourceValue === 'object' &&
+        !Array.isArray(sourceValue) &&
+        targetValue &&
+        typeof targetValue === 'object' &&
+        !Array.isArray(targetValue)
+      ) {
+        result[key] = deepMerge(
+          targetValue as Record<string, unknown>,
+          sourceValue as Record<string, unknown>
+        ) as T[Extract<keyof T, string>];
+      } else {
+        result[key] = sourceValue as T[Extract<keyof T, string>];
+      }
     }
   }
   return result;
