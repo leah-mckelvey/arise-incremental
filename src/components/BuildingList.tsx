@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useStore } from '@ts-query/react';
 import { useBuildingsQuery, useResourcesQuery, useResearchQuery, useHunterQuery } from '../queries/gameQueries';
-import { getBuildingCost, canAffordBuilding, purchaseBuilding, purchaseBuildingBulk, getEffectiveHunterStats } from '../store/gameStore';
+import { getBuildingCost, canAffordBuilding, purchaseBuilding, purchaseBuildingBulk, getEffectiveHunterStats, useArtifactsStore } from '../store/gameStore';
 import type { Resources, Building } from '../store/gameStore';
 import { calculateBulkBuildingCost, calculateMaxBuildingPurchases, calculateBuildingEfficiency, calculateBuildingSynergy, calculateGlobalProductionMultiplier } from '../lib/calculations/resourceCalculations';
 import { Box, Heading, Button, Text, Stack } from '@ts-query/ui-react';
@@ -11,10 +12,13 @@ export const BuildingList = () => {
   const { data: resources } = useResourcesQuery();
   const { data: research } = useResearchQuery();
   const { data: hunter } = useHunterQuery();
+  // Subscribe to artifacts store to re-render when artifacts change
+  useStore(useArtifactsStore, (state) => state.equipped);
   const [bulkAmount, setBulkAmount] = useState<1 | 5 | 10 | 100 | 'max'>(1);
 
   if (!buildings || !resources || !research || !hunter) return null;
 
+  // effectiveStats will now update when artifacts change because we're subscribed to artifacts store
   const effectiveStats = getEffectiveHunterStats();
   const globalMultiplier = calculateGlobalProductionMultiplier(research, resources, hunter.level);
 

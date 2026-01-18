@@ -76,8 +76,9 @@ export const useHunterStore = createStore<HunterState>((set) => {
     },
 
     getEffectiveStats: () => {
-      // Import artifacts store dynamically to avoid circular dependency
-      // For now, just return base stats - will be updated when artifacts are equipped
+      // This is deprecated - use getEffectiveHunterStats() from gameStore instead
+      // That function properly calculates base stats + artifact bonuses
+      // Keeping this for backwards compatibility but it only returns base stats
       const state = useHunterStore.getState();
       return state.hunter.stats;
     },

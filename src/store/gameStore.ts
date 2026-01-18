@@ -539,7 +539,7 @@ export const checkDungeonCompletion = () => {
         checkDungeonUnlocks(newLevel);
 
         // Unlock necromancer at level 40
-        if (newLevel === 40) {
+        if (newLevel >= 40 && !useShadowsStore.getState().necromancerUnlocked) {
           useShadowsStore.getState().unlockNecromancer();
         }
       });
