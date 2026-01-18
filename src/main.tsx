@@ -7,8 +7,8 @@ import { useBuildingsStore } from './store/buildingsStore'
 import { useResearchStore } from './store/researchStore'
 import { useHunterStore } from './store/hunterStore'
 
-// Expose stores to window for debugging
-if (typeof window !== 'undefined') {
+// Expose stores to window for debugging (dev mode only)
+if (import.meta.env.DEV && typeof window !== 'undefined') {
   interface DebugWindow extends Window {
     __GAME_STORE__: typeof gameStore;
     __BUILDINGS_STORE__: typeof useBuildingsStore;

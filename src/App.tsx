@@ -130,8 +130,8 @@ function GameContent() {
         {renderTabContent()}
       </Box>
 
-      {/* Dev Tools - fixed position */}
-      <DevTools />
+      {/* Dev Tools - fixed position (dev mode only) */}
+      {import.meta.env.DEV && <DevTools />}
 
       {/* Notification Display - fixed position */}
       <NotificationDisplay />
