@@ -1,37 +1,37 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { useArtifactsStore } from './artifactsStore';
-import type { Resources } from './types';
+import { describe, it, expect, beforeEach } from "vitest";
+import { useArtifactsStore } from "./artifactsStore";
+import type { Resources } from "./types";
 
-describe('artifactsStore', () => {
+describe("artifactsStore", () => {
   beforeEach(() => {
     useArtifactsStore.getState().reset();
   });
 
-  describe('initial state', () => {
-    it('should start with blacksmith level 1', () => {
+  describe("initial state", () => {
+    it("should start with blacksmith level 1", () => {
       const state = useArtifactsStore.getState();
       expect(state.blacksmithLevel).toBe(1);
     });
 
-    it('should start with 0 blacksmith XP', () => {
+    it("should start with 0 blacksmith XP", () => {
       const state = useArtifactsStore.getState();
       expect(state.blacksmithXp).toBe(0);
     });
 
-    it('should start with empty inventory', () => {
+    it("should start with empty inventory", () => {
       const state = useArtifactsStore.getState();
       expect(state.inventory).toEqual([]);
     });
 
-    it('should start with no equipped artifacts', () => {
+    it("should start with no equipped artifacts", () => {
       const state = useArtifactsStore.getState();
       expect(state.equipped.weapon).toBeUndefined();
       expect(state.equipped.head).toBeUndefined();
     });
   });
 
-  describe('craftArtifact', () => {
-    it('should craft E-rank weapon when resources are sufficient', () => {
+  describe("craftArtifact", () => {
+    it("should craft E-rank weapon when resources are sufficient", () => {
       const resources: Resources = {
         essence: 100,
         crystals: 50,
@@ -45,20 +45,22 @@ describe('artifactsStore', () => {
       let craftedArtifact = null;
       let costPaid = null;
 
-      useArtifactsStore.getState().craftArtifact('E', 'weapon', resources, (cost, artifact) => {
-        costPaid = cost;
-        craftedArtifact = artifact;
-      });
+      useArtifactsStore
+        .getState()
+        .craftArtifact("E", "weapon", resources, (cost, artifact) => {
+          costPaid = cost;
+          craftedArtifact = artifact;
+        });
 
       const state = useArtifactsStore.getState();
       expect(state.inventory.length).toBe(1);
-      expect(state.inventory[0].rank).toBe('E');
-      expect(state.inventory[0].slot).toBe('weapon');
+      expect(state.inventory[0].rank).toBe("E");
+      expect(state.inventory[0].slot).toBe("weapon");
       expect(craftedArtifact).not.toBeNull();
       expect(costPaid).not.toBeNull();
     });
 
-    it('should not craft when resources are insufficient', () => {
+    it("should not craft when resources are insufficient", () => {
       const resources: Resources = {
         essence: 0,
         crystals: 0,
@@ -71,9 +73,11 @@ describe('artifactsStore', () => {
 
       let callbackCalled = false;
 
-      useArtifactsStore.getState().craftArtifact('E', 'weapon', resources, () => {
-        callbackCalled = true;
-      });
+      useArtifactsStore
+        .getState()
+        .craftArtifact("E", "weapon", resources, () => {
+          callbackCalled = true;
+        });
 
       const state = useArtifactsStore.getState();
       expect(state.inventory.length).toBe(0);
@@ -81,8 +85,8 @@ describe('artifactsStore', () => {
     });
   });
 
-  describe('equipArtifact', () => {
-    it('should equip artifact from inventory', () => {
+  describe("equipArtifact", () => {
+    it("should equip artifact from inventory", () => {
       const resources: Resources = {
         essence: 100,
         crystals: 50,
@@ -95,19 +99,21 @@ describe('artifactsStore', () => {
 
       let craftedArtifact = null;
 
-      useArtifactsStore.getState().craftArtifact('E', 'weapon', resources, (_, artifact) => {
-        craftedArtifact = artifact;
-      });
+      useArtifactsStore
+        .getState()
+        .craftArtifact("E", "weapon", resources, (_, artifact) => {
+          craftedArtifact = artifact;
+        });
 
       useArtifactsStore.getState().equipArtifact(craftedArtifact!);
 
       const state = useArtifactsStore.getState();
       expect(state.inventory.length).toBe(0);
       expect(state.equipped.weapon).toBeDefined();
-      expect(state.equipped.weapon?.rank).toBe('E');
+      expect(state.equipped.weapon?.rank).toBe("E");
     });
 
-    it('should swap equipped artifact to inventory', () => {
+    it("should swap equipped artifact to inventory", () => {
       const resources: Resources = {
         essence: 200,
         crystals: 100,
@@ -121,13 +127,17 @@ describe('artifactsStore', () => {
       let artifact1 = null;
       let artifact2 = null;
 
-      useArtifactsStore.getState().craftArtifact('E', 'weapon', resources, (_, artifact) => {
-        artifact1 = artifact;
-      });
+      useArtifactsStore
+        .getState()
+        .craftArtifact("E", "weapon", resources, (_, artifact) => {
+          artifact1 = artifact;
+        });
 
-      useArtifactsStore.getState().craftArtifact('E', 'weapon', resources, (_, artifact) => {
-        artifact2 = artifact;
-      });
+      useArtifactsStore
+        .getState()
+        .craftArtifact("E", "weapon", resources, (_, artifact) => {
+          artifact2 = artifact;
+        });
 
       useArtifactsStore.getState().equipArtifact(artifact1!);
       useArtifactsStore.getState().equipArtifact(artifact2!);
@@ -139,12 +149,11 @@ describe('artifactsStore', () => {
     });
   });
 
-  describe('addBlacksmithXp', () => {
-    it('should add blacksmith XP', () => {
+  describe("addBlacksmithXp", () => {
+    it("should add blacksmith XP", () => {
       useArtifactsStore.getState().addBlacksmithXp(50);
       const state = useArtifactsStore.getState();
       expect(state.blacksmithXp).toBe(50);
     });
   });
 });
-

@@ -1,28 +1,28 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { useHunterStore } from './hunterStore';
+import { describe, it, expect, beforeEach } from "vitest";
+import { useHunterStore } from "./hunterStore";
 
-describe('hunterStore', () => {
+describe("hunterStore", () => {
   beforeEach(() => {
     useHunterStore.getState().reset();
   });
 
-  describe('Initial State', () => {
-    it('should start at level 1', () => {
+  describe("Initial State", () => {
+    it("should start at level 1", () => {
       const hunter = useHunterStore.getState().hunter;
       expect(hunter.level).toBe(1);
     });
 
-    it('should start with E-Rank', () => {
+    it("should start with E-Rank", () => {
       const hunter = useHunterStore.getState().hunter;
-      expect(hunter.rank).toBe('E-Rank');
+      expect(hunter.rank).toBe("E-Rank");
     });
 
-    it('should start with 0 XP', () => {
+    it("should start with 0 XP", () => {
       const hunter = useHunterStore.getState().hunter;
       expect(hunter.xp).toBe(0);
     });
 
-    it('should have initial stats of 10', () => {
+    it("should have initial stats of 10", () => {
       const hunter = useHunterStore.getState().hunter;
       expect(hunter.stats.strength).toBe(10);
       expect(hunter.stats.agility).toBe(10);
@@ -31,20 +31,20 @@ describe('hunterStore', () => {
       expect(hunter.stats.sense).toBe(10);
     });
 
-    it('should start with 0 stat points', () => {
+    it("should start with 0 stat points", () => {
       const hunter = useHunterStore.getState().hunter;
       expect(hunter.statPoints).toBe(0);
     });
   });
 
-  describe('addXp', () => {
-    it('should add XP correctly', () => {
+  describe("addXp", () => {
+    it("should add XP correctly", () => {
       useHunterStore.getState().addXp(50);
       const hunter = useHunterStore.getState().hunter;
       expect(hunter.xp).toBe(50);
     });
 
-    it('should level up when XP threshold is reached', () => {
+    it("should level up when XP threshold is reached", () => {
       const initialLevel = useHunterStore.getState().hunter.level;
       const xpNeeded = useHunterStore.getState().hunter.xpToNextLevel;
 
@@ -55,7 +55,7 @@ describe('hunterStore', () => {
       expect(hunter.xp).toBe(0);
     });
 
-    it('should grant stat points on level up', () => {
+    it("should grant stat points on level up", () => {
       const xpNeeded = useHunterStore.getState().hunter.xpToNextLevel;
 
       useHunterStore.getState().addXp(xpNeeded);
@@ -64,7 +64,7 @@ describe('hunterStore', () => {
       expect(hunter.statPoints).toBe(3);
     });
 
-    it('should handle multiple level ups', () => {
+    it("should handle multiple level ups", () => {
       const initialLevel = useHunterStore.getState().hunter.level;
 
       // Add enough XP for multiple levels
@@ -75,15 +75,15 @@ describe('hunterStore', () => {
       expect(hunter.statPoints).toBeGreaterThan(0);
     });
 
-    it('should update rank on level up', () => {
+    it("should update rank on level up", () => {
       // Level up to 10 (D-Rank threshold)
       useHunterStore.getState().addXp(10000);
 
       const hunter = useHunterStore.getState().hunter;
-      expect(hunter.rank).not.toBe('E-Rank');
+      expect(hunter.rank).not.toBe("E-Rank");
     });
 
-    it('should call onLevelUp callback when leveling up', () => {
+    it("should call onLevelUp callback when leveling up", () => {
       const xpNeeded = useHunterStore.getState().hunter.xpToNextLevel;
       let callbackLevel = 0;
 
@@ -94,7 +94,7 @@ describe('hunterStore', () => {
       expect(callbackLevel).toBe(2);
     });
 
-    it('should not call onLevelUp callback when not leveling up', () => {
+    it("should not call onLevelUp callback when not leveling up", () => {
       let callbackCalled = false;
 
       useHunterStore.getState().addXp(10, () => {
@@ -105,7 +105,7 @@ describe('hunterStore', () => {
     });
   });
 
-  describe('allocateStat', () => {
+  describe("allocateStat", () => {
     beforeEach(() => {
       // Give the hunter some stat points
       useHunterStore.setState({
@@ -116,29 +116,30 @@ describe('hunterStore', () => {
       });
     });
 
-    it('should increase strength', () => {
+    it("should increase strength", () => {
       const initialStrength = useHunterStore.getState().hunter.stats.strength;
 
-      useHunterStore.getState().allocateStat('strength');
+      useHunterStore.getState().allocateStat("strength");
 
       const hunter = useHunterStore.getState().hunter;
       expect(hunter.stats.strength).toBe(initialStrength + 1);
       expect(hunter.statPoints).toBe(4);
     });
 
-    it('should increase agility', () => {
+    it("should increase agility", () => {
       const initialAgility = useHunterStore.getState().hunter.stats.agility;
 
-      useHunterStore.getState().allocateStat('agility');
+      useHunterStore.getState().allocateStat("agility");
 
       const hunter = useHunterStore.getState().hunter;
       expect(hunter.stats.agility).toBe(initialAgility + 1);
     });
 
-    it('should increase intelligence', () => {
-      const initialIntelligence = useHunterStore.getState().hunter.stats.intelligence;
+    it("should increase intelligence", () => {
+      const initialIntelligence =
+        useHunterStore.getState().hunter.stats.intelligence;
 
-      useHunterStore.getState().allocateStat('intelligence');
+      useHunterStore.getState().allocateStat("intelligence");
 
       const hunter = useHunterStore.getState().hunter;
       expect(hunter.stats.intelligence).toBe(initialIntelligence + 1);
@@ -146,11 +147,11 @@ describe('hunterStore', () => {
       expect(hunter.maxMana).toBeGreaterThan(80);
     });
 
-    it('should increase vitality and max HP', () => {
+    it("should increase vitality and max HP", () => {
       const initialVitality = useHunterStore.getState().hunter.stats.vitality;
       const initialMaxHp = useHunterStore.getState().hunter.maxHp;
 
-      useHunterStore.getState().allocateStat('vitality');
+      useHunterStore.getState().allocateStat("vitality");
 
       const hunter = useHunterStore.getState().hunter;
       expect(hunter.stats.vitality).toBe(initialVitality + 1);
@@ -158,7 +159,7 @@ describe('hunterStore', () => {
       expect(hunter.hp).toBe(hunter.maxHp); // HP should be set to new max
     });
 
-    it('should not allocate when no stat points available', () => {
+    it("should not allocate when no stat points available", () => {
       useHunterStore.setState({
         hunter: {
           ...useHunterStore.getState().hunter,
@@ -168,7 +169,7 @@ describe('hunterStore', () => {
 
       const initialStrength = useHunterStore.getState().hunter.stats.strength;
 
-      useHunterStore.getState().allocateStat('strength');
+      useHunterStore.getState().allocateStat("strength");
 
       const hunter = useHunterStore.getState().hunter;
       expect(hunter.stats.strength).toBe(initialStrength);
@@ -176,4 +177,3 @@ describe('hunterStore', () => {
     });
   });
 });
-

@@ -206,10 +206,6 @@ gameRouter.get("/state", async (req: AuthRequest, res) => {
           id: gameState?.id
         });
 
-        // Also try raw SQL to compare
-        const rawResult = await db.get(sql`SELECT id, essence FROM game_states WHERE user_id = ${userId}`);
-        console.log('[BACKEND STEP 3] Raw SQL result:', rawResult);
-
         if (!gameState) {
           console.log('[BACKEND] No game state found, CREATING NEW ONE with essence=0');
           // Create initial game state with Solo Leveling defaults

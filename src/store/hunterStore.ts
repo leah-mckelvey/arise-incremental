@@ -1,17 +1,20 @@
-import { createStore } from '@ts-query/core';
-import type { Hunter, HunterStats } from './types';
-import { processXpGain, calculateStatAllocation } from '../lib/calculations/hunterCalculations';
-import { createInitialHunter } from '../data/initialHunter';
+import { createStore } from "@ts-query/core";
+import type { Hunter, HunterStats } from "./types";
+import {
+  processXpGain,
+  calculateStatAllocation,
+} from "../lib/calculations/hunterCalculations";
+import { createInitialHunter } from "../data/initialHunter";
 
 export interface HunterState {
   hunter: Hunter;
   addXp: (amount: number, onLevelUp?: (newLevel: number) => void) => void;
   allocateStat: (stat: keyof HunterStats) => void;
-  getEffectiveStats: () => HunterStats;  // Base stats + artifact bonuses
+  getEffectiveStats: () => HunterStats; // Base stats + artifact bonuses
   reset: () => void;
 }
 
-const STORAGE_KEY = 'arise-hunter-storage';
+const STORAGE_KEY = "arise-hunter-storage";
 
 const loadPersistedState = (): Partial<HunterState> | null => {
   try {
@@ -20,7 +23,7 @@ const loadPersistedState = (): Partial<HunterState> | null => {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.error('Failed to load hunter state:', error);
+    console.error("Failed to load hunter state:", error);
   }
   return null;
 };
@@ -29,7 +32,7 @@ const persistState = (state: HunterState) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ hunter: state.hunter }));
   } catch (error) {
-    console.error('Failed to persist hunter state:', error);
+    console.error("Failed to persist hunter state:", error);
   }
 };
 
@@ -92,3 +95,7 @@ export const useHunterStore = createStore<HunterState>((set) => {
   return store;
 });
 
+// Subscribe to persist state changes
+useHunterStore.subscribe((state) => {
+  persistState(state);
+});

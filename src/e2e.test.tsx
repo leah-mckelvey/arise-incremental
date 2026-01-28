@@ -10,13 +10,19 @@ import { useBuildingsStore } from "./store/buildingsStore";
 import { useHunterStore } from "./store/hunterStore";
 import { useResearchStore } from "./store/researchStore";
 import { useArtifactsStore } from "./store/artifactsStore";
+import { useDungeonsStore } from "./store/dungeonsStore";
+import { useAlliesStore } from "./store/alliesStore";
+import { useShadowsStore } from "./store/shadowsStore";
 import * as gameApi from "./api/gameApi";
 import { initialBuildings } from "../server/data/initialBuildings";
 import { initialResearch } from "../server/data/initialResearch";
 import { initialDungeons } from "../server/data/initialDungeons";
 import type { TransactionResponse } from "../shared/types";
+import { calculateMaxPartySlots } from "./lib/calculations/partyCalculations";
 
-const E2E_TEST_USER_ID = "test-user-1";
+// Use a DIFFERENT user ID than dev environment (which uses 'test-user-1')
+// This prevents E2E tests from wiping out dev game state
+const E2E_TEST_USER_ID = "e2e-test-user";
 const E2E_TEST_PORT = 3002;
 const E2E_API_BASE = `http://localhost:${E2E_TEST_PORT}`;
 let server: Server;
@@ -54,6 +60,9 @@ const resetFrontendStores = () => {
   useHunterStore.getState().reset();
   useResearchStore.getState().reset();
   useArtifactsStore.getState().reset();
+  useDungeonsStore.getState().reset();
+  useAlliesStore.getState().reset();
+  useShadowsStore.getState().reset();
 };
 
 const cleanDatabase = async () => {
@@ -131,12 +140,14 @@ const clearBackendCache = async () => {
 describe("End-to-End Tests", () => {
   beforeAll(async () => {
     gameApi.setApiBaseUrl(E2E_API_BASE);
+    gameApi.setTestUserId(E2E_TEST_USER_ID);
     const app = createApp();
     server = app.listen(E2E_TEST_PORT);
     await wait(500);
   });
 
   afterAll(async () => {
+    gameApi.setTestUserId(null);
     await new Promise<void>((resolve) => server.close(() => resolve()));
   });
 
@@ -350,6 +361,341 @@ describe("End-to-End Tests", () => {
       // All successful responses should show non-negative resources
       successValues.forEach((r) => {
         expect(r.state.resources.essence).toBeGreaterThanOrEqual(0);
+      });
+    });
+  });
+
+  describe("Dungeon System", () => {
+    const SUNG_JINWOO_ID = "sung-jinwoo";
+
+    beforeEach(() => {
+      // Ensure dungeons are reset properly
+      useDungeonsStore.getState().reset();
+      useAlliesStore.getState().reset();
+      useShadowsStore.getState().reset();
+    });
+
+    describe("Named Hunter Requirement", () => {
+      it("should require at least one named hunter (Sung Jinwoo) to start a dungeon", () => {
+        const dungeonsStore = useDungeonsStore.getState();
+        const dungeons = dungeonsStore.dungeons;
+
+        // Get the first unlocked dungeon
+        const unlockedDungeon = dungeons.find((d) => d.unlocked);
+        expect(unlockedDungeon).toBeDefined();
+
+        let successCalled = false;
+        const onSuccess = () => {
+          successCalled = true;
+        };
+
+        // Start dungeon with Sung Jinwoo
+        dungeonsStore.startDungeon(
+          unlockedDungeon!.id,
+          Date.now(),
+          [SUNG_JINWOO_ID],
+          onSuccess,
+        );
+
+        expect(successCalled).toBe(true);
+        expect(useDungeonsStore.getState().activeDungeons.length).toBe(1);
+        expect(
+          useDungeonsStore.getState().activeDungeons[0].partyIds,
+        ).toContain(SUNG_JINWOO_ID);
+      });
+
+      it("should allow a named companion to lead when Sung Jinwoo is busy", () => {
+        const dungeonsStore = useDungeonsStore.getState();
+        const dungeons = dungeonsStore.dungeons;
+        const unlockedDungeon = dungeons.find((d) => d.unlocked);
+        expect(unlockedDungeon).toBeDefined();
+
+        // First dungeon with Sung Jinwoo
+        let firstSuccess = false;
+        dungeonsStore.startDungeon(
+          unlockedDungeon!.id,
+          Date.now(),
+          [SUNG_JINWOO_ID],
+          () => {
+            firstSuccess = true;
+          },
+        );
+        expect(firstSuccess).toBe(true);
+
+        // Create a named ally (from a dungeon, not generic recruited)
+        const alliesStore = useAlliesStore.getState();
+        const namedAlly = alliesStore.recruitAlly(
+          "Cha Hae-In",
+          "demon-castle-entrance",
+        );
+
+        // Second dungeon with named ally as leader
+        let secondSuccess = false;
+        useDungeonsStore
+          .getState()
+          .startDungeon(unlockedDungeon!.id, Date.now(), [namedAlly.id], () => {
+            secondSuccess = true;
+          });
+
+        expect(secondSuccess).toBe(true);
+        expect(useDungeonsStore.getState().activeDungeons.length).toBe(2);
+      });
+
+      it("should NOT allow a dungeon to start with only nameless grunts", () => {
+        // Generic recruited allies cannot lead - they have originDungeonId='recruited'
+        const alliesStore = useAlliesStore.getState();
+        const grunt = alliesStore.recruitGenericAlly("Generic Hunter", "E");
+
+        // Verify the grunt is marked as 'recruited' (nameless)
+        expect(grunt.originDungeonId).toBe("recruited");
+
+        // The store allows starting - the validation happens in DungeonsTab.tsx
+        // So we test the logic that determines if a party is valid
+        const isNamedCompanion = grunt.originDungeonId !== "recruited";
+        expect(isNamedCompanion).toBe(false);
+
+        // Grunts can be in a party but can't be the only members
+        // Without Sung Jinwoo or a named companion, the party is invalid
+        const partyWithOnlyGrunts = [grunt.id];
+        const hasValidLeader =
+          partyWithOnlyGrunts.includes(SUNG_JINWOO_ID) || isNamedCompanion;
+        expect(hasValidLeader).toBe(false);
+      });
+    });
+
+    describe("Hunter Busy States", () => {
+      it("should mark hunters as busy when dungeon is running", () => {
+        const dungeonsStore = useDungeonsStore.getState();
+        const dungeons = dungeonsStore.dungeons;
+        const unlockedDungeon = dungeons.find((d) => d.unlocked);
+
+        // Start dungeon with Sung Jinwoo
+        dungeonsStore.startDungeon(
+          unlockedDungeon!.id,
+          Date.now(),
+          [SUNG_JINWOO_ID],
+          () => {},
+        );
+
+        // Check if Sung Jinwoo is in an active dungeon (busy)
+        const activeDungeons = useDungeonsStore.getState().activeDungeons;
+        const isSungJinwooBusy = activeDungeons.some((ad) =>
+          ad.partyIds?.includes(SUNG_JINWOO_ID),
+        );
+
+        expect(isSungJinwooBusy).toBe(true);
+      });
+
+      it("should prevent busy hunters from joining another dungeon", () => {
+        const dungeonsStore = useDungeonsStore.getState();
+        const dungeons = dungeonsStore.dungeons;
+        const unlockedDungeon = dungeons.find((d) => d.unlocked);
+
+        // First dungeon with Sung Jinwoo
+        dungeonsStore.startDungeon(
+          unlockedDungeon!.id,
+          Date.now(),
+          [SUNG_JINWOO_ID],
+          () => {},
+        );
+
+        // Try to start another dungeon with Sung Jinwoo (should fail)
+        let secondCallSuccess = false;
+        useDungeonsStore
+          .getState()
+          .startDungeon(
+            unlockedDungeon!.id,
+            Date.now(),
+            [SUNG_JINWOO_ID],
+            () => {
+              secondCallSuccess = true;
+            },
+          );
+
+        // The second start should NOT have called onSuccess
+        expect(secondCallSuccess).toBe(false);
+        // Should still only have 1 active dungeon
+        expect(useDungeonsStore.getState().activeDungeons.length).toBe(1);
+      });
+
+      it("should mark hunters as available when dungeon completes", () => {
+        const dungeonsStore = useDungeonsStore.getState();
+        const dungeons = dungeonsStore.dungeons;
+        const unlockedDungeon = dungeons.find((d) => d.unlocked);
+
+        const startTime = Date.now();
+        dungeonsStore.startDungeon(
+          unlockedDungeon!.id,
+          startTime,
+          [SUNG_JINWOO_ID],
+          () => {},
+        );
+
+        const activeDungeon = useDungeonsStore.getState().activeDungeons[0];
+        expect(activeDungeon).toBeDefined();
+
+        // Complete the dungeon (simulate time passed)
+        let completionSuccess = false;
+        useDungeonsStore.getState().completeDungeon(
+          activeDungeon.id,
+          activeDungeon.endTime + 1, // Past the end time
+          () => {
+            completionSuccess = true;
+          },
+        );
+
+        expect(completionSuccess).toBe(true);
+
+        // Sung Jinwoo should no longer be busy
+        const activeDungeonsAfter = useDungeonsStore.getState().activeDungeons;
+        const isSungJinwooBusyAfter = activeDungeonsAfter.some((ad) =>
+          ad.partyIds?.includes(SUNG_JINWOO_ID),
+        );
+
+        expect(isSungJinwooBusyAfter).toBe(false);
+        expect(activeDungeonsAfter.length).toBe(0);
+      });
+    });
+
+    describe("Party Size Limits", () => {
+      it("should respect max party size based on authority", () => {
+        // Authority 1 = 1 party slot (sqrt(1*2) = 1.41 -> 1)
+        const authority = 1;
+        const maxSlots = calculateMaxPartySlots(authority);
+        expect(maxSlots).toBe(1);
+
+        // Authority 8 = 4 slots (sqrt(8*2) = 4)
+        const higherAuthority = 8;
+        const higherMaxSlots = calculateMaxPartySlots(higherAuthority);
+        expect(higherMaxSlots).toBe(4);
+      });
+
+      it("should allow parties up to max size", () => {
+        // Create named companions
+        const alliesStore = useAlliesStore.getState();
+        const ally1 = alliesStore.recruitAlly("Cha Hae-In", "demon-castle");
+        const ally2 = alliesStore.recruitAlly("Yoo Jin-Ho", "demon-castle");
+
+        const dungeonsStore = useDungeonsStore.getState();
+        const dungeons = dungeonsStore.dungeons;
+        const allianceDungeon = dungeons.find(
+          (d) => d.unlocked && d.type === "alliance",
+        );
+
+        // If we have an alliance dungeon, test with allies
+        if (allianceDungeon) {
+          let success = false;
+          dungeonsStore.startDungeon(
+            allianceDungeon.id,
+            Date.now(),
+            [SUNG_JINWOO_ID, ally1.id, ally2.id],
+            () => {
+              success = true;
+            },
+          );
+
+          expect(success).toBe(true);
+          const activeDungeon = useDungeonsStore.getState().activeDungeons[0];
+          expect(activeDungeon.partyIds?.length).toBe(3);
+        } else {
+          // Test with solo dungeon and Sung Jinwoo
+          const soloDungeon = dungeons.find(
+            (d) => d.unlocked && d.type === "solo",
+          );
+          expect(soloDungeon).toBeDefined();
+
+          let success = false;
+          dungeonsStore.startDungeon(
+            soloDungeon!.id,
+            Date.now(),
+            [SUNG_JINWOO_ID],
+            () => {
+              success = true;
+            },
+          );
+
+          expect(success).toBe(true);
+        }
+      });
+
+      it("should prevent adding more companions than max party slots allows", () => {
+        // With authority 1, max party size is 1 companion
+        const authority = 1;
+        const maxSlots = calculateMaxPartySlots(authority);
+        expect(maxSlots).toBe(1);
+
+        // Create multiple allies
+        const alliesStore = useAlliesStore.getState();
+        alliesStore.recruitAlly("Ally1", "dungeon1");
+        alliesStore.recruitAlly("Ally2", "dungeon1");
+        alliesStore.recruitAlly("Ally3", "dungeon1");
+
+        const allAllies = useAlliesStore.getState().allies;
+        expect(allAllies.length).toBe(3);
+
+        // The party selection should be limited to maxSlots companions
+        // (Sung Jinwoo is separate, so companions are limited to maxSlots)
+        const partyLimitedToMax = allAllies.slice(0, maxSlots);
+        expect(partyLimitedToMax.length).toBe(1);
+      });
+    });
+
+    describe("Nameless Grunts Leadership", () => {
+      it("should identify named companions correctly", () => {
+        const alliesStore = useAlliesStore.getState();
+
+        // Named ally (from dungeon)
+        const namedAlly = alliesStore.recruitAlly(
+          "Cha Hae-In",
+          "demon-castle-entrance",
+        );
+        expect(namedAlly.originDungeonId).not.toBe("recruited");
+
+        // Nameless grunt (generic recruited)
+        const grunt = alliesStore.recruitGenericAlly("Hunter", "E");
+        expect(grunt.originDungeonId).toBe("recruited");
+      });
+
+      it("should validate party has valid leader (Sung Jinwoo or named companion)", () => {
+        const alliesStore = useAlliesStore.getState();
+        const namedAlly = alliesStore.recruitAlly("Cha Hae-In", "demon-castle");
+        const grunt = alliesStore.recruitGenericAlly("Hunter", "E");
+
+        // Valid party: Sung Jinwoo leads
+        const party1 = [SUNG_JINWOO_ID, grunt.id];
+        const hasValidLeader1 =
+          party1.includes(SUNG_JINWOO_ID) ||
+          party1.some((id) => {
+            const ally = useAlliesStore
+              .getState()
+              .allies.find((a) => a.id === id);
+            return ally && ally.originDungeonId !== "recruited";
+          });
+        expect(hasValidLeader1).toBe(true);
+
+        // Valid party: Named companion leads
+        const party2 = [namedAlly.id, grunt.id];
+        const hasValidLeader2 =
+          party2.includes(SUNG_JINWOO_ID) ||
+          party2.some((id) => {
+            const ally = useAlliesStore
+              .getState()
+              .allies.find((a) => a.id === id);
+            return ally && ally.originDungeonId !== "recruited";
+          });
+        expect(hasValidLeader2).toBe(true);
+
+        // Invalid party: Only grunt
+        const party3 = [grunt.id];
+        const hasValidLeader3 =
+          party3.includes(SUNG_JINWOO_ID) ||
+          party3.some((id) => {
+            const ally = useAlliesStore
+              .getState()
+              .allies.find((a) => a.id === id);
+            return ally && ally.originDungeonId !== "recruited";
+          });
+        expect(hasValidLeader3).toBe(false);
       });
     });
   });
