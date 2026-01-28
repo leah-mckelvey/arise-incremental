@@ -1,6 +1,6 @@
 /**
  * Server-side game logic
- * Mirrors the frontend calculations but runs on the server for anti-cheat
+ * Uses shared calculation functions for consistency with frontend
  */
 
 import type {
@@ -9,15 +9,46 @@ import type {
   Hunter,
   HunterStats,
   Building,
+  Research,
   GameStateDTO,
   OfflineGains,
 } from '../../shared/types.js';
+
+// Import shared calculation functions
+import {
+  calculateResourceCaps as calculateResourceCapsShared,
+  calculateTickGains as calculateTickGainsShared,
+  calculateGatherXp as calculateGatherXpShared,
+} from '../../shared/calculations/resourceCalculations.js';
+import {
+  calculateBuildingCost as calculateBuildingCostShared,
+  canAffordCost as canAffordCostShared,
+} from '../../shared/calculations/buildingCalculations.js';
+
+// Re-export shared functions for use in route handlers
+export const calculateResourceCaps = calculateResourceCapsShared;
+export const calculateGatherXp = calculateGatherXpShared;
 
 // ============================================================================
 // Constants
 // ============================================================================
 
 const MAX_OFFLINE_TIME_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+/**
+ * Base resource caps before any buildings, research, or hunter bonuses
+ * These are the starting caps that get modified by game progression
+ * IMPORTANT: Pass these to applyPassiveIncome(), NOT the caps from the database
+ */
+export const BASE_RESOURCE_CAPS: Resources = {
+  essence: 100,
+  crystals: 100,
+  gold: 200,
+  souls: 50,
+  attraction: 5,
+  gems: 1,
+  knowledge: 100,
+};
 
 // ============================================================================
 // Resource Helpers
@@ -59,16 +90,75 @@ export function subtractResources(a: Resources, b: Partial<Resources>): Resource
   };
 }
 
-export function canAffordCost(resources: Resources, cost: Partial<Resources>): boolean {
-  return (
-    resources.essence >= (cost.essence ?? 0) &&
-    resources.crystals >= (cost.crystals ?? 0) &&
-    resources.gold >= (cost.gold ?? 0) &&
-    resources.souls >= (cost.souls ?? 0) &&
-    resources.attraction >= (cost.attraction ?? 0) &&
-    resources.gems >= (cost.gems ?? 0) &&
-    resources.knowledge >= (cost.knowledge ?? 0)
-  );
+// Re-export shared function (handles Partial<Resources> via type coercion)
+export const canAffordCost = (resources: Resources, cost: Partial<Resources>): boolean => {
+  const fullCost: Resources = {
+    essence: cost.essence ?? 0,
+    crystals: cost.crystals ?? 0,
+    gold: cost.gold ?? 0,
+    souls: cost.souls ?? 0,
+    attraction: cost.attraction ?? 0,
+    gems: cost.gems ?? 0,
+    knowledge: cost.knowledge ?? 0,
+  };
+  return canAffordCostShared(resources, fullCost);
+};
+
+/**
+ * Get missing resources for a cost
+ * Returns an object with only the resources that are insufficient
+ */
+export function getMissingResources(
+  resources: Resources,
+  cost: Partial<Resources>
+): Partial<Resources> {
+  const missing: Partial<Resources> = {};
+
+  if (cost.essence !== undefined && resources.essence < cost.essence) {
+    missing.essence = cost.essence - resources.essence;
+  }
+  if (cost.crystals !== undefined && resources.crystals < cost.crystals) {
+    missing.crystals = cost.crystals - resources.crystals;
+  }
+  if (cost.gold !== undefined && resources.gold < cost.gold) {
+    missing.gold = cost.gold - resources.gold;
+  }
+  if (cost.souls !== undefined && resources.souls < cost.souls) {
+    missing.souls = cost.souls - resources.souls;
+  }
+  if (cost.attraction !== undefined && resources.attraction < cost.attraction) {
+    missing.attraction = cost.attraction - resources.attraction;
+  }
+  if (cost.gems !== undefined && resources.gems < cost.gems) {
+    missing.gems = cost.gems - resources.gems;
+  }
+  if (cost.knowledge !== undefined && resources.knowledge < cost.knowledge) {
+    missing.knowledge = cost.knowledge - resources.knowledge;
+  }
+
+  return missing;
+}
+
+/**
+ * Format missing resources into a human-readable error message
+ */
+export function formatMissingResourcesMessage(missing: Partial<Resources>): string {
+  const parts: string[] = [];
+
+  if (missing.essence) parts.push(`${Math.ceil(missing.essence)} essence`);
+  if (missing.crystals) parts.push(`${Math.ceil(missing.crystals)} crystals`);
+  if (missing.gold) parts.push(`${Math.ceil(missing.gold)} gold`);
+  if (missing.souls) parts.push(`${Math.ceil(missing.souls)} souls`);
+  if (missing.attraction) parts.push(`${Math.ceil(missing.attraction)} attraction`);
+  if (missing.gems) parts.push(`${Math.ceil(missing.gems)} gems`);
+  if (missing.knowledge) parts.push(`${Math.ceil(missing.knowledge)} knowledge`);
+
+  if (parts.length === 0) return 'Insufficient resources';
+  if (parts.length === 1) return `Need ${parts[0]} more`;
+  if (parts.length === 2) return `Need ${parts[0]} and ${parts[1]} more`;
+
+  const lastPart = parts.pop();
+  return `Need ${parts.join(', ')}, and ${lastPart} more`;
 }
 
 export function applyResourceCaps(resources: Resources, caps: ResourceCaps): Resources {
@@ -84,21 +174,11 @@ export function applyResourceCaps(resources: Resources, caps: ResourceCaps): Res
 }
 
 // ============================================================================
-// Building Calculations
+// Building Calculations (using shared functions)
 // ============================================================================
 
-export function calculateBuildingCost(building: Building): Resources {
-  const multiplier = Math.pow(building.costMultiplier, building.count);
-  return {
-    essence: Math.floor((building.baseCost.essence ?? 0) * multiplier),
-    crystals: Math.floor((building.baseCost.crystals ?? 0) * multiplier),
-    gold: Math.floor((building.baseCost.gold ?? 0) * multiplier),
-    souls: Math.floor((building.baseCost.souls ?? 0) * multiplier),
-    attraction: Math.floor((building.baseCost.attraction ?? 0) * multiplier),
-    gems: Math.floor((building.baseCost.gems ?? 0) * multiplier),
-    knowledge: Math.floor((building.baseCost.knowledge ?? 0) * multiplier),
-  };
-}
+// Re-export shared function
+export const calculateBuildingCost = calculateBuildingCostShared;
 
 export function calculateBulkBuildingCost(building: Building, quantity: number): Resources {
   let totalCost = createEmptyResources();
@@ -115,49 +195,22 @@ export function calculateBulkBuildingCost(building: Building, quantity: number):
 }
 
 // ============================================================================
-// Production Calculations
+// Production Calculations (using shared functions)
 // ============================================================================
 
+/**
+ * Calculate tick gains using shared calculation function
+ * This properly accounts for research, hunter stats, synergies, etc.
+ */
 export function calculateTickGains(
   buildings: Record<string, Building>,
+  research: Record<string, Research>,
+  resources: Resources,
+  hunterLevel: number,
   tickDuration: number, // in seconds
-): Resources {
-  let gains = createEmptyResources();
-
-  for (const building of Object.values(buildings)) {
-    if (building.count > 0 && building.produces && building.perSecond) {
-      const production = building.produces;
-      const rate = building.perSecond;
-      const amount = building.count * rate * tickDuration;
-
-      gains = addResources(gains, {
-        essence: (production.essence ?? 0) * amount,
-        crystals: (production.crystals ?? 0) * amount,
-        gold: (production.gold ?? 0) * amount,
-        souls: (production.souls ?? 0) * amount,
-        attraction: (production.attraction ?? 0) * amount,
-        gems: (production.gems ?? 0) * amount,
-        knowledge: (production.knowledge ?? 0) * amount,
-      });
-    }
-  }
-
-  return gains;
-}
-
-export function calculateXpGains(
-  buildings: Record<string, Building>,
-  tickDuration: number, // in seconds
-): number {
-  let xpGain = 0;
-
-  for (const building of Object.values(buildings)) {
-    if (building.count > 0 && building.xpPerSecond) {
-      xpGain += building.count * building.xpPerSecond * tickDuration;
-    }
-  }
-
-  return xpGain;
+  hunterStats?: HunterStats
+): { resourceGains: Resources; xpGain: number } {
+  return calculateTickGainsShared(buildings, research, resources, hunterLevel, tickDuration, hunterStats);
 }
 
 // ============================================================================
@@ -229,17 +282,62 @@ export function calculateOfflineGains(
   const cappedTime = Math.min(timeAway, MAX_OFFLINE_TIME_MS);
   const deltaSeconds = cappedTime / 1000;
 
-  // Calculate resource gains
-  const resourceGains = calculateTickGains(state.buildings, deltaSeconds);
-
-  // Calculate XP gains
-  const xpGained = calculateXpGains(state.buildings, deltaSeconds);
+  // Calculate resource and XP gains using shared function
+  const { resourceGains, xpGain } = calculateTickGains(
+    state.buildings,
+    state.research,
+    state.resources,
+    state.hunter.level,
+    deltaSeconds,
+    state.hunter.stats
+  );
 
   return {
     timeAway,
     resourceGains,
-    xpGained,
+    xpGained: xpGain,
     capped: timeAway > MAX_OFFLINE_TIME_MS,
   };
+}
+
+/**
+ * Apply passive income since lastUpdate to current resources
+ * This should be called BEFORE any validation in mutations
+ * Uses shared calculation functions to properly account for research, hunter stats, synergies, etc.
+ *
+ * IMPORTANT: This function calculates DYNAMIC resource caps based on buildings/research/hunter stats.
+ * Do NOT pass static caps from the database - they will be recalculated here.
+ */
+export function applyPassiveIncome(
+  currentResources: Resources,
+  baseCaps: Resources,
+  buildings: Record<string, Building>,
+  research: Record<string, Research>,
+  hunterLevel: number,
+  hunterStats: HunterStats,
+  lastUpdate: number | null | undefined,
+  now: number = Date.now(),
+): Resources {
+  // If lastUpdate is null/undefined, use current time (no passive income)
+  const lastUpdateTime = lastUpdate ?? now;
+  const deltaMs = Math.max(0, now - lastUpdateTime);
+  const deltaSeconds = deltaMs / 1000;
+
+  // Calculate DYNAMIC resource caps (accounts for buildings, research, hunter stats)
+  const dynamicCaps = calculateResourceCaps(baseCaps, buildings, research, hunterLevel, hunterStats);
+
+  // Calculate passive gains using shared function (includes all bonuses)
+  const { resourceGains } = calculateTickGains(
+    buildings,
+    research,
+    currentResources,
+    hunterLevel,
+    deltaSeconds,
+    hunterStats
+  );
+
+  // Add gains to current resources and apply DYNAMIC caps
+  const newResources = addResources(currentResources, resourceGains);
+  return applyResourceCaps(newResources, dynamicCaps);
 }
 

@@ -10,14 +10,16 @@ import { useAlliesStore } from './alliesStore';
 import { useShadowsStore } from './shadowsStore';
 import {
   calculateResourceCaps,
+  calculateTickGains,
   calculateGatherAmount,
-  calculateGatherXp,
-  calculateTickGains
+  calculateGatherXp
 } from '../lib/calculations/resourceCalculations';
 import { calculateEquippedStatBonuses, applyArtifactBonuses } from '../lib/calculations/artifactCalculations';
 import { deductCost } from '../lib/calculations/buildingCalculations';
 import { baseResourceCaps } from '../data/initialHunter';
 import { runMigrations, getCurrentVersion } from '../lib/migrations';
+import * as gameApi from '../api/gameApi';
+import type { GameStateDTO } from '../../shared/types';
 
 // Main game state (resources, caps, tick)
 export interface GameState {
@@ -25,12 +27,15 @@ export interface GameState {
   resources: Resources;
   resourceCaps: ResourceCaps;
   lastUpdate: number;
+  lastServerSync: number; // Track when we last synced with server
+  pendingMutations: number; // Track number of in-flight mutations
 
   // Actions
   addResource: (resource: keyof Resources, amount: number) => void;
   gatherResource: (resource: 'essence' | 'crystals' | 'gold') => void;
   tick: () => void;
-  reset: () => void;
+  reset: () => Promise<void>;
+  syncWithServer: () => Promise<void>; // Sync all stores with server state
 
   // Dev mode
   devFillResources: () => void;
@@ -64,6 +69,8 @@ const initialState = {
   resources: createResources(),
   resourceCaps: createResourceCaps(),
   lastUpdate: Date.now(),
+  lastServerSync: 0, // Never synced yet
+  pendingMutations: 0, // No mutations in flight
 };
 
 // Deep merge helper - properly merges nested objects like resources and resourceCaps
@@ -163,17 +170,46 @@ export const gameStore = createStore<GameState>((set, get) => {
           });
         },
 
-        gatherResource: (resource: 'essence' | 'crystals' | 'gold') => {
+        gatherResource: async (resource: 'essence' | 'crystals' | 'gold') => {
           const research = useResearchStore.getState().research;
           const effectiveStats = getEffectiveHunterStats();
 
-          // Use calculation library for gathering (with artifact bonuses)
+          // Calculate expected gains (optimistic)
           const amount = calculateGatherAmount(resource, effectiveStats, research);
-          get().addResource(resource, amount);
-
-          // Add XP for gathering
           const xpGain = calculateGatherXp(resource, effectiveStats);
+
+          // Store previous state for rollback
+          const previousResources = get().resources;
+          const previousHunter = useHunterStore.getState().hunter;
+
+          // Optimistic update - apply immediately for instant feedback
+          get().addResource(resource, amount);
           useHunterStore.getState().addXp(xpGain, handleLevelUp);
+
+          // Track pending mutation
+          set(s => ({ pendingMutations: s.pendingMutations + 1 }));
+
+          try {
+            // Background API call
+            const response = await gameApi.gatherResource(resource);
+            // Success - sync server state
+            syncServerState(response.state);
+          } catch (error) {
+            // Rollback on error
+            set({ resources: previousResources });
+            useHunterStore.setState({ hunter: previousHunter });
+            console.error('Failed to gather resource:', error);
+            useNotificationsStore.getState().addNotification(
+              'error',
+              'Action Failed',
+              `Failed to gather ${resource}. Your progress has been reverted.`,
+              undefined,
+              5000
+            );
+          } finally {
+            // Always decrement pending mutations
+            set(s => ({ pendingMutations: s.pendingMutations - 1 }));
+          }
         },
 
         tick: () => {
@@ -219,28 +255,97 @@ export const gameStore = createStore<GameState>((set, get) => {
           }
         },
 
-        reset: () => {
-          // Reset all substores first
-          useBuildingsStore.getState().reset();
-          useResearchStore.getState().reset();
-          useHunterStore.getState().reset();
-          useArtifactsStore.getState().reset();
-          useDungeonsStore.getState().reset();
-          useAlliesStore.getState().reset();
-          useShadowsStore.getState().reset();
+        reset: async () => {
+          try {
+            // Call backend to reset server state
+            await gameApi.resetGame();
 
-          // Recalculate caps with fresh hunter stats and buildings
-          const buildings = useBuildingsStore.getState().buildings;
-          const research = useResearchStore.getState().research;
-          const hunter = useHunterStore.getState().hunter;
-          const effectiveStats = getEffectiveHunterStats();
+            // Sync with server to get fresh state
+            await get().syncWithServer();
+          } catch (error) {
+            console.error('Failed to reset game:', error);
+            // If backend fails, still reset locally
+            // Reset all substores first
+            useBuildingsStore.getState().reset();
+            useResearchStore.getState().reset();
+            useHunterStore.getState().reset();
+            useArtifactsStore.getState().reset();
+            useDungeonsStore.getState().reset();
+            useAlliesStore.getState().reset();
+            useShadowsStore.getState().reset();
 
-          set({
-            resources: createResources(),
-            resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, research, hunter.level, effectiveStats),
-            lastUpdate: Date.now(),
-          });
-          persistState(get());
+            // Recalculate caps with fresh hunter stats and buildings
+            const buildings = useBuildingsStore.getState().buildings;
+            const research = useResearchStore.getState().research;
+            const hunter = useHunterStore.getState().hunter;
+            const effectiveStats = getEffectiveHunterStats();
+
+            set({
+              resources: createResources(),
+              resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, research, hunter.level, effectiveStats),
+              lastUpdate: Date.now(),
+            });
+            persistState(get());
+          }
+        },
+
+        syncWithServer: async () => {
+          // Don't sync if there are pending mutations
+          if (get().pendingMutations > 0) {
+            console.log('⏸️ Skipping sync - mutations in flight');
+            return;
+          }
+
+          try {
+            const response = await gameApi.getGameState();
+            const serverState = response.state;
+
+            // Update all stores with server state
+            set({
+              resources: serverState.resources,
+              resourceCaps: serverState.resourceCaps,
+              lastUpdate: serverState.lastUpdate,
+              lastServerSync: Date.now(),
+            });
+
+            // Update hunter store
+            useHunterStore.setState({ hunter: serverState.hunter });
+
+            // Update buildings store
+            useBuildingsStore.setState({ buildings: serverState.buildings });
+
+            // Update research store
+            useResearchStore.setState({ research: serverState.research });
+
+            // Update artifacts store
+            useArtifactsStore.setState({
+              equipped: serverState.artifacts.equipped,
+              inventory: serverState.artifacts.inventory,
+              blacksmithLevel: serverState.artifacts.blacksmithLevel,
+              blacksmithXp: serverState.artifacts.blacksmithXp,
+            });
+
+            // Update dungeons store
+            useDungeonsStore.setState({
+              dungeons: serverState.dungeons,
+              activeDungeons: serverState.activeDungeons,
+            });
+
+            // Update allies store
+            useAlliesStore.setState({ allies: serverState.allies });
+
+            // Update shadows store
+            useShadowsStore.setState({ shadows: serverState.shadows });
+
+            // Show offline gains if present (skip notification for now - type mismatch)
+            if (response.offlineGains && response.offlineGains.timeAway > 5000) {
+              console.log(`⏰ Welcome back! You were away for ${Math.floor(response.offlineGains.timeAway / 1000 / 60)} minutes`);
+            }
+
+            console.log('✅ Synced with server');
+          } catch (error) {
+            console.error('Failed to sync with server:', error);
+          }
         },
 
         devFillResources: () => {
@@ -276,53 +381,173 @@ export const getEffectiveHunterStats = (): HunterStats => {
   return applyArtifactBonuses(hunter.stats, artifactBonuses);
 };
 
+/**
+ * Helper to sync server state after a successful mutation
+ * Handles partial updates - only syncs fields that are present in serverState
+ */
+const syncServerState = (serverState: Partial<GameStateDTO>) => {
+  console.log('🔄 syncServerState called with:', {
+    hasResources: !!serverState.resources,
+    hasResourceCaps: !!serverState.resourceCaps,
+    essenceCap: serverState.resourceCaps?.essence,
+    hasBuildings: !!serverState.buildings,
+  });
+
+  // Update gameStore if resources or resourceCaps are present
+  if (serverState.resources || serverState.resourceCaps || serverState.lastUpdate) {
+    gameStore.setState({
+      ...(serverState.resources && { resources: serverState.resources }),
+      ...(serverState.resourceCaps && { resourceCaps: serverState.resourceCaps }),
+      ...(serverState.lastUpdate && { lastUpdate: serverState.lastUpdate }),
+      lastServerSync: Date.now(),
+    });
+  }
+
+  // Only update stores if the data is present
+  if (serverState.hunter) {
+    useHunterStore.setState({ hunter: serverState.hunter });
+  }
+  if (serverState.buildings) {
+    useBuildingsStore.setState({ buildings: serverState.buildings });
+  }
+  if (serverState.research) {
+    useResearchStore.setState({ research: serverState.research });
+  }
+  if (serverState.artifacts) {
+    useArtifactsStore.setState({
+      equipped: serverState.artifacts.equipped,
+      inventory: serverState.artifacts.inventory,
+      blacksmithLevel: serverState.artifacts.blacksmithLevel,
+      blacksmithXp: serverState.artifacts.blacksmithXp,
+    });
+  }
+  if (serverState.dungeons || serverState.activeDungeons) {
+    useDungeonsStore.setState({
+      ...(serverState.dungeons && { dungeons: serverState.dungeons }),
+      ...(serverState.activeDungeons && { activeDungeons: serverState.activeDungeons }),
+    });
+  }
+  if (serverState.allies) {
+    useAlliesStore.setState({ allies: serverState.allies });
+  }
+  if (serverState.shadows) {
+    useShadowsStore.setState({ shadows: serverState.shadows });
+  }
+};
+
 // Coordinated purchase functions that update multiple stores
-export const purchaseBuilding = (buildingId: string) => {
+export const purchaseBuilding = async (buildingId: string) => {
   const research = useResearchStore.getState().research;
   const hunter = useHunterStore.getState().hunter;
   const effectiveStats = getEffectiveHunterStats();
 
+  // Store previous state for rollback
+  const previousResources = gameStore.getState().resources;
+  const previousResourceCaps = gameStore.getState().resourceCaps;
+  const previousBuildings = useBuildingsStore.getState().buildings;
+
+  // Optimistic update
   useBuildingsStore.getState().purchaseBuilding(buildingId, () => gameStore.getState().resources, (cost, newBuildings) => {
-    // Get fresh resources and deduct cost
     const currentResources = gameStore.getState().resources;
     const newResources = deductCost(currentResources, cost);
 
-    // Deduct resources using calculation library (with artifact bonuses)
     gameStore.setState({
       resources: newResources,
       resourceCaps: calculateResourceCaps(baseResourceCaps, newBuildings, research, hunter.level, effectiveStats),
     });
   });
+
+  // Track pending mutation
+  gameStore.setState(s => ({ pendingMutations: s.pendingMutations + 1 }));
+
+  try {
+    // Background API call
+    const response = await gameApi.purchaseBuilding(buildingId);
+    // Success - sync server state
+    syncServerState(response.state);
+  } catch (error) {
+    // Rollback on error - restore ALL previous state
+    gameStore.setState({
+      resources: previousResources,
+      resourceCaps: previousResourceCaps,
+    });
+    useBuildingsStore.setState({ buildings: previousBuildings });
+    console.error('Failed to purchase building:', error);
+    useNotificationsStore.getState().addNotification(
+      'error',
+      'Purchase Failed',
+      'Failed to purchase building. Your resources have been restored.',
+      undefined,
+      5000
+    );
+  } finally {
+    gameStore.setState(s => ({ pendingMutations: s.pendingMutations - 1 }));
+  }
 };
 
-export const purchaseBuildingBulk = (buildingId: string, quantity: number) => {
+export const purchaseBuildingBulk = async (buildingId: string, quantity: number) => {
   const research = useResearchStore.getState().research;
   const hunter = useHunterStore.getState().hunter;
   const effectiveStats = getEffectiveHunterStats();
 
+  // Store previous state for rollback
+  const previousResources = gameStore.getState().resources;
+  const previousResourceCaps = gameStore.getState().resourceCaps;
+  const previousBuildings = useBuildingsStore.getState().buildings;
+
+  // Optimistic update
   useBuildingsStore.getState().purchaseBuildingBulk(buildingId, quantity, () => gameStore.getState().resources, (cost, newBuildings) => {
-    // Get fresh resources and deduct cost
     const currentResources = gameStore.getState().resources;
     const newResources = deductCost(currentResources, cost);
 
-    // Deduct resources
     gameStore.setState({
       resources: newResources,
       resourceCaps: calculateResourceCaps(baseResourceCaps, newBuildings, research, hunter.level, effectiveStats),
     });
   });
+
+  // Track pending mutation
+  gameStore.setState(s => ({ pendingMutations: s.pendingMutations + 1 }));
+
+  try {
+    // Background API call
+    const response = await gameApi.purchaseBulkBuilding(buildingId, quantity);
+    // Success - sync server state
+    syncServerState(response.state);
+  } catch (error) {
+    // Rollback on error - restore ALL previous state
+    gameStore.setState({
+      resources: previousResources,
+      resourceCaps: previousResourceCaps,
+    });
+    useBuildingsStore.setState({ buildings: previousBuildings });
+    console.error('Failed to purchase buildings:', error);
+    useNotificationsStore.getState().addNotification(
+      'error',
+      'Bulk Purchase Failed',
+      'Failed to purchase buildings. Your resources have been restored.',
+      undefined,
+      5000
+    );
+  } finally {
+    gameStore.setState(s => ({ pendingMutations: s.pendingMutations - 1 }));
+  }
 };
 
-export const purchaseResearch = (researchId: string) => {
+export const purchaseResearch = async (researchId: string) => {
   const buildings = useBuildingsStore.getState().buildings;
   const hunter = useHunterStore.getState().hunter;
   const effectiveStats = getEffectiveHunterStats();
 
+  // Store previous state for rollback
+  const previousResources = gameStore.getState().resources;
+  const previousResourceCaps = gameStore.getState().resourceCaps;
+  const previousResearch = useResearchStore.getState().research;
+
+  // Optimistic update
   useResearchStore.getState().purchaseResearch(researchId, () => gameStore.getState().resources.knowledge, (cost, newResearch) => {
-    // Get fresh resources in case they changed
     const currentResources = gameStore.getState().resources;
 
-    // Deduct knowledge (with artifact bonuses)
     gameStore.setState({
       resources: createResources({
         ...currentResources,
@@ -331,12 +556,44 @@ export const purchaseResearch = (researchId: string) => {
       resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, newResearch, hunter.level, effectiveStats),
     });
   });
+
+  // Track pending mutation
+  gameStore.setState(s => ({ pendingMutations: s.pendingMutations + 1 }));
+
+  try {
+    // Background API call
+    const response = await gameApi.purchaseResearch(researchId);
+    // Success - sync server state
+    syncServerState(response.state);
+  } catch (error) {
+    // Rollback on error - restore ALL previous state
+    gameStore.setState({
+      resources: previousResources,
+      resourceCaps: previousResourceCaps,
+    });
+    useResearchStore.setState({ research: previousResearch });
+    console.error('Failed to purchase research:', error);
+    useNotificationsStore.getState().addNotification(
+      'error',
+      'Research Failed',
+      'Failed to purchase research. Your resources have been restored.',
+      undefined,
+      5000
+    );
+  } finally {
+    gameStore.setState(s => ({ pendingMutations: s.pendingMutations - 1 }));
+  }
 };
 
-export const allocateStat = (stat: keyof import('./types').HunterStats) => {
+export const allocateStat = async (stat: keyof import('./types').HunterStats) => {
+  // Store previous state for rollback
+  const previousHunter = useHunterStore.getState().hunter;
+  const previousResourceCaps = gameStore.getState().resourceCaps;
+
+  // Optimistic update
   useHunterStore.getState().allocateStat(stat);
 
-  // Recalculate caps after stat allocation (stats + artifacts affect caps now)
+  // Recalculate caps after stat allocation
   const buildings = useBuildingsStore.getState().buildings;
   const research = useResearchStore.getState().research;
   const hunter = useHunterStore.getState().hunter;
@@ -345,6 +602,30 @@ export const allocateStat = (stat: keyof import('./types').HunterStats) => {
   gameStore.setState({
     resourceCaps: calculateResourceCaps(baseResourceCaps, buildings, research, hunter.level, effectiveStats),
   });
+
+  // Track pending mutation
+  gameStore.setState(s => ({ pendingMutations: s.pendingMutations + 1 }));
+
+  try {
+    // Background API call
+    const response = await gameApi.allocateStat(stat);
+    // Success - sync server state
+    syncServerState(response.state);
+  } catch (error) {
+    // Rollback on error - restore ALL previous state
+    useHunterStore.setState({ hunter: previousHunter });
+    gameStore.setState({ resourceCaps: previousResourceCaps });
+    console.error('Failed to allocate stat:', error);
+    useNotificationsStore.getState().addNotification(
+      'error',
+      'Stat Allocation Failed',
+      'Failed to allocate stat point. Your stats have been restored.',
+      undefined,
+      5000
+    );
+  } finally {
+    gameStore.setState(s => ({ pendingMutations: s.pendingMutations - 1 }));
+  }
 };
 
 export const craftArtifact = (rank: import('./types').ArtifactRank, slot: import('./types').ArtifactSlot) => {
@@ -449,15 +730,70 @@ export const destroyArtifactsUnderRank = (maxRank: 'E' | 'D' | 'C' | 'B' | 'A' |
 };
 
 // Dungeon actions
-export const startDungeon = (dungeonId: string, partyIds: string[] = []) => {
+export const startDungeon = async (dungeonId: string, partyIds: string[] = []) => {
   const currentTime = Date.now();
+
+  // Store previous state for rollback
+  const previousActiveDungeons = useDungeonsStore.getState().activeDungeons;
+
+  // Optimistic update
   useDungeonsStore.getState().startDungeon(dungeonId, currentTime, partyIds, () => {
     console.log('🏰 Dungeon started successfully');
   });
+
+  // Track pending mutation
+  gameStore.setState(s => ({ pendingMutations: s.pendingMutations + 1 }));
+
+  try {
+    // Background API call
+    const response = await gameApi.startDungeon(dungeonId, partyIds);
+    // Success - sync server state
+    syncServerState(response.state);
+  } catch (error) {
+    // Rollback on error
+    useDungeonsStore.setState({ activeDungeons: previousActiveDungeons });
+    console.error('Failed to start dungeon:', error);
+    useNotificationsStore.getState().addNotification(
+      'error',
+      'Dungeon Start Failed',
+      'Failed to start dungeon. Please try again.',
+      undefined,
+      5000
+    );
+  } finally {
+    gameStore.setState(s => ({ pendingMutations: s.pendingMutations - 1 }));
+  }
 };
 
-export const cancelDungeon = (activeDungeonId: string) => {
+export const cancelDungeon = async (activeDungeonId: string) => {
+  // Store previous state for rollback
+  const previousActiveDungeons = useDungeonsStore.getState().activeDungeons;
+
+  // Optimistic update
   useDungeonsStore.getState().cancelDungeon(activeDungeonId);
+
+  // Track pending mutation
+  gameStore.setState(s => ({ pendingMutations: s.pendingMutations + 1 }));
+
+  try {
+    // Background API call
+    const response = await gameApi.cancelDungeon(activeDungeonId);
+    // Success - sync server state
+    syncServerState(response.state);
+  } catch (error) {
+    // Rollback on error
+    useDungeonsStore.setState({ activeDungeons: previousActiveDungeons });
+    console.error('Failed to cancel dungeon:', error);
+    useNotificationsStore.getState().addNotification(
+      'error',
+      'Cancel Failed',
+      'Failed to cancel dungeon. Please try again.',
+      undefined,
+      5000
+    );
+  } finally {
+    gameStore.setState(s => ({ pendingMutations: s.pendingMutations - 1 }));
+  }
 };
 
 // Check and complete dungeons if time is up (called from tick)
@@ -638,6 +974,75 @@ export const checkDungeonUnlocks = (hunterLevel: number) => {
 const checkNecromancerUnlock = (hunterLevel: number) => {
   if (hunterLevel >= 40 && !useShadowsStore.getState().necromancerUnlocked) {
     useShadowsStore.getState().unlockNecromancer();
+  }
+};
+
+// Ally/Shadow recruitment actions
+export const recruitGenericAlly = async (name: string, rank: string, attractionCost: number) => {
+  // Store previous state for rollback
+  const previousResources = gameStore.getState().resources;
+  const previousAllies = useAlliesStore.getState().allies;
+
+  // Optimistic update - deduct attraction and recruit ally
+  gameStore.getState().addResource('attraction', -attractionCost);
+  useAlliesStore.getState().recruitGenericAlly(name, rank);
+
+  // Track pending mutation
+  gameStore.setState(s => ({ pendingMutations: s.pendingMutations + 1 }));
+
+  try {
+    // Background API call
+    const response = await gameApi.recruitAlly(name, rank);
+    // Success - sync server state
+    syncServerState(response.state);
+  } catch (error) {
+    // Rollback on error
+    gameStore.setState({ resources: previousResources });
+    useAlliesStore.setState({ allies: previousAllies });
+    console.error('Failed to recruit ally:', error);
+    useNotificationsStore.getState().addNotification(
+      'error',
+      'Recruitment Failed',
+      'Failed to recruit ally. Your resources have been restored.',
+      undefined,
+      5000
+    );
+  } finally {
+    gameStore.setState(s => ({ pendingMutations: s.pendingMutations - 1 }));
+  }
+};
+
+export const extractShadowManual = async (name: string, dungeonId: string, soulsCost: number) => {
+  // Store previous state for rollback
+  const previousResources = gameStore.getState().resources;
+  const previousShadows = useShadowsStore.getState().shadows;
+
+  // Optimistic update - deduct souls and extract shadow
+  gameStore.getState().addResource('souls', -soulsCost);
+  useShadowsStore.getState().extractShadow(name, dungeonId);
+
+  // Track pending mutation
+  gameStore.setState(s => ({ pendingMutations: s.pendingMutations + 1 }));
+
+  try {
+    // Background API call
+    const response = await gameApi.extractShadow(name, dungeonId);
+    // Success - sync server state
+    syncServerState(response.state);
+  } catch (error) {
+    // Rollback on error
+    gameStore.setState({ resources: previousResources });
+    useShadowsStore.setState({ shadows: previousShadows });
+    console.error('Failed to extract shadow:', error);
+    useNotificationsStore.getState().addNotification(
+      'error',
+      'Extraction Failed',
+      'Failed to extract shadow. Your resources have been restored.',
+      undefined,
+      5000
+    );
+  } finally {
+    gameStore.setState(s => ({ pendingMutations: s.pendingMutations - 1 }));
   }
 };
 

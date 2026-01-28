@@ -3,7 +3,7 @@ import { Box, Heading, Text, Button } from '@ts-query/ui-react';
 import { useAlliesStore } from '../store/alliesStore';
 import { useHunterStore } from '../store/hunterStore';
 import { useDungeonsStore } from '../store/dungeonsStore';
-import { gameStore } from '../store/gameStore';
+import { gameStore, recruitGenericAlly } from '../store/gameStore';
 import { calculateMaxPartySlots } from '../lib/calculations/partyCalculations';
 import { recruitableAllies } from '../data/recruitableAllies';
 
@@ -22,11 +22,8 @@ export const AlliesTab = () => {
       return;
     }
 
-    // Deduct attraction
-    gameStore.getState().addResource('attraction', -recruitableAlly.attractionCost);
-
-    // Recruit the ally
-    useAlliesStore.getState().recruitGenericAlly(recruitableAlly.name, recruitableAlly.rank);
+    // Call coordinated function with optimistic update
+    recruitGenericAlly(recruitableAlly.name, recruitableAlly.rank, recruitableAlly.attractionCost);
   };
 
   // Group allies by origin dungeon
