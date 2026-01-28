@@ -17,6 +17,17 @@ const client = createClient({
   authToken: dbAuthToken,
 });
 
+// SQLite tuning to reduce test flakiness / SQLITE_BUSY under concurrent access.
+// Safe to no-op for non-file (remote libsql/Turso) URLs.
+if (dbUrl.startsWith('file:')) {
+  // Enable WAL for better concurrency (multiple readers + one writer)
+  await client.execute('PRAGMA journal_mode = WAL;');
+  // Wait a bit for locks instead of immediately throwing SQLITE_BUSY
+  await client.execute('PRAGMA busy_timeout = 5000;');
+  // WAL-friendly default; trades durability for speed (fine for local dev/tests)
+  await client.execute('PRAGMA synchronous = NORMAL;');
+}
+
 // Create Drizzle instance
 export const db = drizzle(client, { schema });
 
@@ -27,4 +38,3 @@ export type Database = typeof db;
 export const closeDb = async () => {
   await client.close();
 };
-

@@ -1,11 +1,8 @@
-import { createStore } from "@ts-query/core";
-import type { Resources, ResourceCaps } from "./types";
-import {
-  calculateBuildingCost,
-  canAffordCost,
-} from "../lib/calculations/buildingCalculations";
-import { calculateBulkBuildingCost } from "../lib/calculations/resourceCalculations";
-import { initialBuildings } from "../data/initialBuildings";
+import { createStore } from '@ts-query/core';
+import type { Resources, ResourceCaps } from './types';
+import { calculateBuildingCost, canAffordCost } from '../lib/calculations/buildingCalculations';
+import { calculateBulkBuildingCost } from '../lib/calculations/resourceCalculations';
+import { initialBuildings } from '../data/initialBuildings';
 
 // Building types
 export interface Building {
@@ -26,24 +23,18 @@ export interface BuildingsState {
   purchaseBuilding: (
     buildingId: string,
     getResources: () => Resources,
-    onSuccess: (
-      cost: Resources,
-      newBuildings: Record<string, Building>,
-    ) => void,
+    onSuccess: (cost: Resources, newBuildings: Record<string, Building>) => void
   ) => void;
   purchaseBuildingBulk: (
     buildingId: string,
     quantity: number,
     getResources: () => Resources,
-    onSuccess: (
-      cost: Resources,
-      newBuildings: Record<string, Building>,
-    ) => void,
+    onSuccess: (cost: Resources, newBuildings: Record<string, Building>) => void
   ) => void;
   reset: () => void;
 }
 
-const STORAGE_KEY = "arise-buildings-storage";
+const STORAGE_KEY = 'arise-buildings-storage';
 
 const loadPersistedState = (): Partial<BuildingsState> | null => {
   try {
@@ -52,19 +43,16 @@ const loadPersistedState = (): Partial<BuildingsState> | null => {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.error("Failed to load buildings state:", error);
+    console.error('Failed to load buildings state:', error);
   }
   return null;
 };
 
 const persistState = (state: BuildingsState) => {
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ buildings: state.buildings }),
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ buildings: state.buildings }));
   } catch (error) {
-    console.error("Failed to persist buildings state:", error);
+    console.error('Failed to persist buildings state:', error);
   }
 };
 
@@ -144,7 +132,4 @@ useBuildingsStore.subscribe((state) => {
 });
 
 // Export helper functions
-export {
-  calculateBuildingCost as getBuildingCost,
-  canAffordCost as canAffordBuilding,
-};
+export { calculateBuildingCost as getBuildingCost, canAffordCost as canAffordBuilding };

@@ -48,7 +48,7 @@ export function logFrontendTransaction(log: FrontendTransactionLog) {
   }[log.phase];
 
   console.group(`${emoji} [FRONTEND] ${log.phase} - ${log.endpoint}`);
-  
+
   if (log.clientTxId) {
     console.log(`TxID: ${log.clientTxId}`);
   }
@@ -72,8 +72,8 @@ export function logFrontendTransaction(log: FrontendTransactionLog) {
       gold: log.serverState.gold - log.localState.gold,
       souls: log.serverState.souls - log.localState.souls,
     };
-    
-    const hasDiff = Object.values(diff).some(d => d !== 0);
+
+    const hasDiff = Object.values(diff).some((d) => d !== 0);
     if (hasDiff) {
       console.warn('⚠️ STATE DESYNC DETECTED:', diff);
     }
@@ -130,7 +130,11 @@ export function createFrontendLogger(endpoint: string, action: string, clientTxI
       });
     },
 
-    apiResponse: (responseBody: unknown, serverState: FrontendTransactionLog['serverState'], localState: FrontendTransactionLog['localState']) => {
+    apiResponse: (
+      responseBody: unknown,
+      serverState: FrontendTransactionLog['serverState'],
+      localState: FrontendTransactionLog['localState']
+    ) => {
       logFrontendTransaction({
         timestamp: Date.now(),
         phase: 'API_RESPONSE',
@@ -143,7 +147,10 @@ export function createFrontendLogger(endpoint: string, action: string, clientTxI
       });
     },
 
-    syncState: (serverState: FrontendTransactionLog['serverState'], localState: FrontendTransactionLog['localState']) => {
+    syncState: (
+      serverState: FrontendTransactionLog['serverState'],
+      localState: FrontendTransactionLog['localState']
+    ) => {
       logFrontendTransaction({
         timestamp: Date.now(),
         phase: 'SYNC_STATE',
@@ -179,4 +186,3 @@ export function createFrontendLogger(endpoint: string, action: string, clientTxI
     },
   };
 }
-

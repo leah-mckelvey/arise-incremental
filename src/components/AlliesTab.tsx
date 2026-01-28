@@ -15,7 +15,7 @@ export const AlliesTab = () => {
   const maxPartySlots = calculateMaxPartySlots(authority);
   const dungeons = useStore(useDungeonsStore, (state) => state.dungeons);
 
-  const handleRecruitGeneric = (recruitableAlly: typeof recruitableAllies[0]) => {
+  const handleRecruitGeneric = (recruitableAlly: (typeof recruitableAllies)[0]) => {
     const currentAttraction = gameStore.getState().resources.attraction;
     if (currentAttraction < recruitableAlly.attractionCost) {
       console.warn(`Not enough attraction to recruit ${recruitableAlly.name}`);
@@ -27,13 +27,16 @@ export const AlliesTab = () => {
   };
 
   // Group allies by origin dungeon
-  const alliesByDungeon = allies.reduce((acc, ally) => {
-    if (!acc[ally.originDungeonId]) {
-      acc[ally.originDungeonId] = [];
-    }
-    acc[ally.originDungeonId].push(ally);
-    return acc;
-  }, {} as Record<string, typeof allies>);
+  const alliesByDungeon = allies.reduce(
+    (acc, ally) => {
+      if (!acc[ally.originDungeonId]) {
+        acc[ally.originDungeonId] = [];
+      }
+      acc[ally.originDungeonId].push(ally);
+      return acc;
+    },
+    {} as Record<string, typeof allies>
+  );
 
   const getDungeonName = (dungeonId: string) => {
     if (dungeonId === 'recruited') {
@@ -43,7 +46,7 @@ export const AlliesTab = () => {
     return dungeon?.name || 'Unknown Dungeon';
   };
 
-  const getXpPercentage = (ally: typeof allies[0]) => {
+  const getXpPercentage = (ally: (typeof allies)[0]) => {
     return (ally.xp / ally.xpToNextLevel) * 100;
   };
 
@@ -85,7 +88,9 @@ export const AlliesTab = () => {
           <Box>
             <Text style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Average Level</Text>
             <Text style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--accent-gold)' }}>
-              {allies.length > 0 ? (allies.reduce((sum, a) => sum + a.level, 0) / allies.length).toFixed(1) : '0'}
+              {allies.length > 0
+                ? (allies.reduce((sum, a) => sum + a.level, 0) / allies.length).toFixed(1)
+                : '0'}
             </Text>
           </Box>
         </Box>
@@ -107,10 +112,17 @@ export const AlliesTab = () => {
         <Text style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '15px' }}>
           Spend attraction to recruit generic hunters. You can recruit multiple of each rank.
         </Text>
-        <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
+        <Box
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: '10px',
+          }}
+        >
           {recruitableAllies.map((recruitableAlly) => {
             const canAfford = attraction >= recruitableAlly.attractionCost;
-            const meetsLevel = !recruitableAlly.requiredLevel || hunterLevel >= recruitableAlly.requiredLevel;
+            const meetsLevel =
+              !recruitableAlly.requiredLevel || hunterLevel >= recruitableAlly.requiredLevel;
             const canRecruit = canAfford && meetsLevel;
 
             return (
@@ -124,17 +136,34 @@ export const AlliesTab = () => {
                   opacity: canRecruit ? 1 : 0.6,
                 }}
               >
-                <Text style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--accent-teal)', marginBottom: '5px' }}>
+                <Text
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    color: 'var(--accent-teal)',
+                    marginBottom: '5px',
+                  }}
+                >
                   {recruitableAlly.name}
                 </Text>
-                <Text style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                <Text
+                  style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}
+                >
                   {recruitableAlly.description}
                 </Text>
-                <Text style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                <Text
+                  style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}
+                >
                   Cost: {recruitableAlly.attractionCost} 💫
                 </Text>
                 {recruitableAlly.requiredLevel && (
-                  <Text style={{ fontSize: '11px', color: meetsLevel ? 'var(--accent-green)' : 'var(--accent-red)', marginBottom: '8px' }}>
+                  <Text
+                    style={{
+                      fontSize: '11px',
+                      color: meetsLevel ? 'var(--accent-green)' : 'var(--accent-red)',
+                      marginBottom: '8px',
+                    }}
+                  >
                     Requires Level {recruitableAlly.requiredLevel}
                   </Text>
                 )}
@@ -185,7 +214,13 @@ export const AlliesTab = () => {
               <Heading level={4} style={{ color: 'var(--accent-pink)', marginBottom: '10px' }}>
                 {getDungeonName(dungeonId)}
               </Heading>
-              <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '15px' }}>
+              <Box
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                  gap: '15px',
+                }}
+              >
                 {dungeonAllies.map((ally) => (
                   <Box
                     key={ally.id}
@@ -196,24 +231,51 @@ export const AlliesTab = () => {
                       borderRadius: '8px',
                     }}
                   >
-                    <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                    <Box
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: '10px',
+                      }}
+                    >
                       <Box>
-                        <Text style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--accent-pink)' }}>
+                        <Text
+                          style={{
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            color: 'var(--accent-pink)',
+                          }}
+                        >
                           {ally.name}
                         </Text>
                         <Text style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
                           Level {ally.level}
                         </Text>
                       </Box>
-                      <Text style={{ fontSize: '12px', color: 'var(--accent-teal)', fontWeight: 'bold' }}>
+                      <Text
+                        style={{
+                          fontSize: '12px',
+                          color: 'var(--accent-teal)',
+                          fontWeight: 'bold',
+                        }}
+                      >
                         👥 ALLY
                       </Text>
                     </Box>
 
                     {/* XP Progress Bar */}
                     <Box style={{ marginBottom: '10px' }}>
-                      <Box style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                        <Text style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>XP Progress</Text>
+                      <Box
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          marginBottom: '5px',
+                        }}
+                      >
+                        <Text style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                          XP Progress
+                        </Text>
                         <Text style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
                           {ally.xp.toLocaleString()} / {ally.xpToNextLevel.toLocaleString()}
                         </Text>
@@ -231,14 +293,21 @@ export const AlliesTab = () => {
                           style={{
                             width: `${getXpPercentage(ally)}%`,
                             height: '100%',
-                            background: 'linear-gradient(90deg, var(--accent-pink), var(--accent-purple))',
+                            background:
+                              'linear-gradient(90deg, var(--accent-pink), var(--accent-purple))',
                             transition: 'width 0.3s ease',
                           }}
                         />
                       </Box>
                     </Box>
 
-                    <Text style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                    <Text
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--text-secondary)',
+                        fontStyle: 'italic',
+                      }}
+                    >
                       Levels up from {getDungeonName(dungeonId)} runs
                     </Text>
                   </Box>
@@ -251,4 +320,3 @@ export const AlliesTab = () => {
     </Box>
   );
 };
-

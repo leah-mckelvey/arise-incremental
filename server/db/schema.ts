@@ -6,14 +6,20 @@ export const users = sqliteTable('users', {
   id: text('id').primaryKey(), // UUID
   clerkId: text('clerk_id').unique(), // For future Clerk integration
   email: text('email'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
 
 // Game states table - one row per user
 export const gameStates = sqliteTable('game_states', {
   id: text('id').primaryKey(), // UUID
-  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
   version: integer('version').notNull().default(1),
 
   // Resources stored as individual columns for easier querying and indexing
@@ -55,7 +61,11 @@ export const gameStates = sqliteTable('game_states', {
 
   // Complex data stored as JSON
   buildings: text('buildings', { mode: 'json' }).notNull().default('{}'),
-  artifacts: text('artifacts', { mode: 'json' }).notNull().default('{"equipped":{"weapon":null,"armor":null,"accessory":null},"inventory":[],"blacksmithLevel":1,"blacksmithXp":0}'),
+  artifacts: text('artifacts', { mode: 'json' })
+    .notNull()
+    .default(
+      '{"equipped":{"weapon":null,"armor":null,"accessory":null},"inventory":[],"blacksmithLevel":1,"blacksmithXp":0}'
+    ),
   dungeons: text('dungeons', { mode: 'json' }).notNull().default('[]'),
   activeDungeons: text('active_dungeons', { mode: 'json' }).notNull().default('[]'),
   allies: text('allies', { mode: 'json' }).notNull().default('[]'),
@@ -63,26 +73,36 @@ export const gameStates = sqliteTable('game_states', {
   research: text('research', { mode: 'json' }).notNull().default('{}'),
 
   // Timestamp of last update (for offline gains)
-  lastUpdate: integer('last_update', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  lastUpdate: integer('last_update', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
 
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
 
 // Transactions table - audit log for all game actions (anti-cheat)
 export const transactions = sqliteTable('transactions', {
   id: text('id').primaryKey(), // UUID
-  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
   clientTxId: text('client_tx_id').unique().notNull(), // Client-generated UUID for idempotency
-  
+
   type: text('type').notNull(), // 'gather', 'purchase_building', 'reset', etc.
   payload: text('payload', { mode: 'json' }).notNull(), // Transaction details
-  
+
   // State before and after (for debugging/rollback)
   stateBefore: text('state_before', { mode: 'json' }),
   stateAfter: text('state_after', { mode: 'json' }),
-  
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(unixepoch())`),
+
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
 
 // Type exports for TypeScript
@@ -94,4 +114,3 @@ export type NewGameState = typeof gameStates.$inferInsert;
 
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
-

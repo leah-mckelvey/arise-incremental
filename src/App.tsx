@@ -57,12 +57,15 @@ function GameContent() {
 
   // Periodic sync every 5 minutes (for offline gains, respects pending mutations)
   useEffect(() => {
-    const syncInterval = setInterval(() => {
-      // Only sync if tab is visible (don't waste resources in background)
-      if (document.visibilityState === 'visible') {
-        syncWithServer(); // Will skip if mutations are in flight
-      }
-    }, 5 * 60 * 1000); // 5 minutes
+    const syncInterval = setInterval(
+      () => {
+        // Only sync if tab is visible (don't waste resources in background)
+        if (document.visibilityState === 'visible') {
+          syncWithServer(); // Will skip if mutations are in flight
+        }
+      },
+      5 * 60 * 1000
+    ); // 5 minutes
 
     return () => clearInterval(syncInterval);
   }, [syncWithServer]);

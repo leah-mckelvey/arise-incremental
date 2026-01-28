@@ -1,8 +1,8 @@
-import { createStore } from "@ts-query/core";
-import type { Dungeon, ActiveDungeon, DungeonRewards } from "./types";
-import { initialDungeons } from "../data/initialDungeons";
+import { createStore } from '@ts-query/core';
+import type { Dungeon, ActiveDungeon, DungeonRewards } from './types';
+import { initialDungeons } from '../data/initialDungeons';
 
-const STORAGE_KEY = "arise-dungeons-state";
+const STORAGE_KEY = 'arise-dungeons-state';
 
 // Counter to ensure unique dungeon IDs even when started in the same millisecond
 let dungeonIdCounter = 0;
@@ -16,16 +16,12 @@ export interface DungeonsState {
     dungeonId: string,
     currentTime: number,
     partyIds: string[],
-    onSuccess: () => void,
+    onSuccess: () => void
   ) => void;
   completeDungeon: (
     activeDungeonId: string,
     currentTime: number,
-    onSuccess: (
-      rewards: DungeonRewards,
-      dungeonName: string,
-      dungeon: Dungeon,
-    ) => void,
+    onSuccess: (rewards: DungeonRewards, dungeonName: string, dungeon: Dungeon) => void
   ) => void;
   cancelDungeon: (activeDungeonId: string) => void;
   unlockDungeon: (dungeonId: string) => void;
@@ -44,7 +40,7 @@ const loadPersistedState = (): Partial<DungeonsState> | null => {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.error("Failed to load dungeons state:", error);
+    console.error('Failed to load dungeons state:', error);
   }
   return null;
 };
@@ -56,10 +52,10 @@ const persistState = (state: DungeonsState) => {
       JSON.stringify({
         dungeons: state.dungeons,
         activeDungeons: state.activeDungeons,
-      }),
+      })
     );
   } catch (error) {
-    console.error("Failed to persist dungeons state:", error);
+    console.error('Failed to persist dungeons state:', error);
   }
 };
 
@@ -76,24 +72,21 @@ export const useDungeonsStore = createStore<DungeonsState>((set, get) => {
 
       const dungeon = state.dungeons.find((d) => d.id === dungeonId);
       if (!dungeon) {
-        console.warn("Dungeon not found");
+        console.warn('Dungeon not found');
         return;
       }
 
       if (!dungeon.unlocked) {
-        console.warn("Dungeon not unlocked");
+        console.warn('Dungeon not unlocked');
         return;
       }
 
       // Check if any companions in the party are already assigned to another dungeon
       const busyCompanions = partyIds.filter((companionId) =>
-        state.activeDungeons.some((ad) => ad.partyIds?.includes(companionId)),
+        state.activeDungeons.some((ad) => ad.partyIds?.includes(companionId))
       );
       if (busyCompanions.length > 0) {
-        console.warn(
-          "Some companions are already in another dungeon:",
-          busyCompanions,
-        );
+        console.warn('Some companions are already in another dungeon:', busyCompanions);
         return;
       }
 
@@ -109,7 +102,7 @@ export const useDungeonsStore = createStore<DungeonsState>((set, get) => {
       };
 
       console.log(
-        `🏰 Started dungeon: ${dungeon.name} (${dungeon.duration}s) with ${partyIds.length} companion(s)`,
+        `🏰 Started dungeon: ${dungeon.name} (${dungeon.duration}s) with ${partyIds.length} companion(s)`
       );
 
       set((state) => ({
@@ -120,50 +113,42 @@ export const useDungeonsStore = createStore<DungeonsState>((set, get) => {
 
     completeDungeon: (activeDungeonId, currentTime, onSuccess) => {
       const state = get();
-      const activeDungeon = state.activeDungeons.find(
-        (ad) => ad.id === activeDungeonId,
-      );
+      const activeDungeon = state.activeDungeons.find((ad) => ad.id === activeDungeonId);
 
       if (!activeDungeon) {
-        console.warn("No active dungeon with that ID");
+        console.warn('No active dungeon with that ID');
         return;
       }
 
       if (currentTime < activeDungeon.endTime) {
-        console.warn("Dungeon not complete yet");
+        console.warn('Dungeon not complete yet');
         return;
       }
 
-      const dungeon = state.dungeons.find(
-        (d) => d.id === activeDungeon.dungeonId,
-      );
+      const dungeon = state.dungeons.find((d) => d.id === activeDungeon.dungeonId);
       if (!dungeon) {
-        console.warn("Dungeon not found");
+        console.warn('Dungeon not found');
         return;
       }
 
       console.log(`✅ Completed dungeon: ${dungeon.name}`);
-      console.log("Rewards:", dungeon.rewards);
+      console.log('Rewards:', dungeon.rewards);
 
       const rewards = dungeon.rewards;
       const dungeonName = dungeon.name;
 
       // Remove this dungeon from active dungeons
       set((state) => ({
-        activeDungeons: state.activeDungeons.filter(
-          (ad) => ad.id !== activeDungeonId,
-        ),
+        activeDungeons: state.activeDungeons.filter((ad) => ad.id !== activeDungeonId),
       }));
 
       onSuccess(rewards, dungeonName, dungeon);
     },
 
     cancelDungeon: (activeDungeonId) => {
-      console.log("❌ Cancelled dungeon:", activeDungeonId);
+      console.log('❌ Cancelled dungeon:', activeDungeonId);
       set((state) => ({
-        activeDungeons: state.activeDungeons.filter(
-          (ad) => ad.id !== activeDungeonId,
-        ),
+        activeDungeons: state.activeDungeons.filter((ad) => ad.id !== activeDungeonId),
       }));
     },
 

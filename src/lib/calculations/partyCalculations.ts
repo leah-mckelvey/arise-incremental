@@ -1,9 +1,9 @@
 /**
  * Calculate max party slots based on authority stat
  * Authority progression is non-linear to prevent early game resource explosion
- * 
+ *
  * Formula: floor(sqrt(authority * 2))
- * 
+ *
  * Examples:
  * - Authority 1 = 1 slot (sqrt(2) = 1.41 -> 1)
  * - Authority 2 = 2 slots (sqrt(4) = 2)
@@ -26,13 +26,12 @@ export const calculateMaxPartySlots = (authority: number): number => {
 export const authorityForNextSlot = (currentAuthority: number): number => {
   const currentSlots = calculateMaxPartySlots(currentAuthority);
   const nextSlots = currentSlots + 1;
-  
+
   // Solve: floor(sqrt(x * 2)) = nextSlots
   // sqrt(x * 2) = nextSlots
   // x * 2 = nextSlots^2
   // x = nextSlots^2 / 2
   const authorityNeeded = Math.ceil((nextSlots * nextSlots) / 2);
-  
+
   return authorityNeeded - currentAuthority;
 };
-

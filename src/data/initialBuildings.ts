@@ -238,7 +238,7 @@ export const initialBuildings: Record<string, Building> = {
   // Synergy Buildings (Tier 3)
   monarchsPalace: {
     id: 'monarchsPalace',
-    name: '👑 Monarch\'s Palace',
+    name: "👑 Monarch's Palace",
     description: 'Grants +1 Authority per 5 buildings owned. Increases all caps by 10%',
     count: 0,
     baseCost: createResources({ essence: 2000, crystals: 2500, gold: 3000, souls: 100, gems: 50 }),
@@ -248,7 +248,8 @@ export const initialBuildings: Record<string, Building> = {
   shadowNexus: {
     id: 'shadowNexus',
     name: '🌑 Shadow Nexus',
-    description: 'Each shadow increases all production by 2%. Souls boost shadow effectiveness by 1% each',
+    description:
+      'Each shadow increases all production by 2%. Souls boost shadow effectiveness by 1% each',
     count: 0,
     baseCost: createResources({ essence: 3000, souls: 200, crystals: 4000, gold: 3000, gems: 80 }),
     costMultiplier: 1.3,
@@ -257,11 +258,17 @@ export const initialBuildings: Record<string, Building> = {
   allianceHQ: {
     id: 'allianceHQ',
     name: '🤝 Alliance HQ',
-    description: 'Each ally increases all production by 2%. Attraction boosts ally effectiveness by 1% per 10',
+    description:
+      'Each ally increases all production by 2%. Attraction boosts ally effectiveness by 1% per 10',
     count: 0,
-    baseCost: createResources({ essence: 4000, attraction: 500, crystals: 4000, gold: 5000, gems: 100 }),
+    baseCost: createResources({
+      essence: 4000,
+      attraction: 500,
+      crystals: 4000,
+      gold: 5000,
+      gems: 100,
+    }),
     costMultiplier: 1.3,
     // Special: allies boost production
   },
 };
-

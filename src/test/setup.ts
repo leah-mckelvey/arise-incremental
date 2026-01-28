@@ -7,4 +7,3 @@ afterEach(() => {
   cleanup();
   localStorage.clear();
 });
-

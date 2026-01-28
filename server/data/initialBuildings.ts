@@ -148,5 +148,21 @@ export const initialBuildings: Record<string, Building> = {
     costMultiplier: 1.12,
     increasesCaps: { attraction: 10 },
   },
-};
 
+  // Advanced buildings (unlocked by research)
+  soulHarvester: {
+    id: 'soulHarvester',
+    name: '👻 Soul Harvester',
+    description: 'Harvests souls from defeated enemies. Each soul boosts all production by 1%',
+    count: 0,
+    baseCost: createResources({
+      essence: 300,
+      crystals: 300,
+      gold: 300,
+      gems: 20,
+    }),
+    costMultiplier: 1.2,
+    produces: { souls: 1 },
+    perSecond: 0.05,
+  },
+};

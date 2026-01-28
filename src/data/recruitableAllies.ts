@@ -56,4 +56,3 @@ export const recruitableAllies: RecruitableAlly[] = [
     requiredLevel: 40,
   },
 ];
-

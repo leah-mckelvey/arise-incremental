@@ -1,4 +1,4 @@
-import { createStore } from "@ts-query/core";
+import { createStore } from '@ts-query/core';
 import type {
   Artifact,
   ArtifactSlot,
@@ -6,25 +6,25 @@ import type {
   EquippedArtifacts,
   Resources,
   ArtifactUpgrade,
-} from "./types";
+} from './types';
 import {
   createInitialEquippedArtifacts,
   availableUpgrades,
   calculateUpgradeCost,
   calculateUpgradeBlacksmithXpCost,
-} from "../data/initialArtifacts";
+} from '../data/initialArtifacts';
 import {
   calculateCraftCost,
   calculateBlacksmithXpToNextLevel,
-} from "../lib/calculations/artifactCalculations";
+} from '../lib/calculations/artifactCalculations';
 import {
   rollTier,
   rollStats,
   generateArtifactName,
   getTierMaxUpgrades,
-} from "../lib/lootGenerator";
+} from '../lib/lootGenerator';
 
-const STORAGE_KEY = "arise-artifacts-state";
+const STORAGE_KEY = 'arise-artifacts-state';
 
 // Counter to ensure unique artifact IDs even when crafted in the same millisecond
 let artifactIdCounter = 0;
@@ -41,7 +41,7 @@ export interface ArtifactsState {
     rank: ArtifactRank,
     slot: ArtifactSlot,
     resources: Resources,
-    onSuccess: (cost: Resources, newArtifact: Artifact) => void,
+    onSuccess: (cost: Resources, newArtifact: Artifact) => void
   ) => void;
   equipArtifact: (artifact: Artifact) => void;
   unequipArtifact: (slot: ArtifactSlot) => void;
@@ -49,15 +49,12 @@ export interface ArtifactsState {
     artifactId: string,
     upgradeId: string,
     resources: Resources,
-    onSuccess: (cost: Resources, blacksmithXpGain: number) => void,
+    onSuccess: (cost: Resources, blacksmithXpGain: number) => void
   ) => void;
-  destroyArtifact: (
-    artifactId: string,
-    onSuccess: (essenceGain: number) => void,
-  ) => void;
+  destroyArtifact: (artifactId: string, onSuccess: (essenceGain: number) => void) => void;
   destroyArtifactsUnderRank: (
     maxRank: ArtifactRank,
-    onSuccess: (essenceGain: number, count: number) => void,
+    onSuccess: (essenceGain: number, count: number) => void
   ) => void;
   addBlacksmithXp: (xp: number, onLevelUp?: (newLevel: number) => void) => void;
   reset: () => void;
@@ -78,7 +75,7 @@ const loadPersistedState = (): Partial<ArtifactsState> | null => {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.error("Failed to load artifacts state:", error);
+    console.error('Failed to load artifacts state:', error);
   }
   return null;
 };
@@ -93,18 +90,16 @@ const persistState = (state: ArtifactsState) => {
         blacksmithLevel: state.blacksmithLevel,
         blacksmithXp: state.blacksmithXp,
         blacksmithXpToNextLevel: state.blacksmithXpToNextLevel,
-      }),
+      })
     );
   } catch (error) {
-    console.error("Failed to persist artifacts state:", error);
+    console.error('Failed to persist artifacts state:', error);
   }
 };
 
 export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
   const persisted = loadPersistedState();
-  const mergedState = persisted
-    ? { ...initialState, ...persisted }
-    : initialState;
+  const mergedState = persisted ? { ...initialState, ...persisted } : initialState;
 
   const store: ArtifactsState = {
     ...mergedState,
@@ -114,11 +109,11 @@ export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
 
       // Check if player can afford
       const canAfford = (Object.keys(cost) as Array<keyof Resources>).every(
-        (resource) => resources[resource] >= cost[resource],
+        (resource) => resources[resource] >= cost[resource]
       );
 
       if (!canAfford) {
-        console.warn("Cannot afford to craft artifact");
+        console.warn('Cannot afford to craft artifact');
         return;
       }
 
@@ -162,9 +157,7 @@ export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
     equipArtifact: (artifact) => {
       set((state) => {
         // Remove from inventory
-        const newInventory = state.inventory.filter(
-          (a) => a.id !== artifact.id,
-        );
+        const newInventory = state.inventory.filter((a) => a.id !== artifact.id);
 
         // Unequip current item in slot if exists
         const currentlyEquipped = state.equipped[artifact.slot];
@@ -207,44 +200,39 @@ export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
       let isEquipped = false;
 
       if (!artifact) {
-        artifact = Object.values(state.equipped).find(
-          (a) => a?.id === artifactId,
-        );
+        artifact = Object.values(state.equipped).find((a) => a?.id === artifactId);
         isEquipped = true;
       }
 
       if (!artifact) {
-        console.warn("Artifact not found");
+        console.warn('Artifact not found');
         return;
       }
 
       if (artifact.upgrades.length >= artifact.maxUpgrades) {
-        console.warn("Artifact has max upgrades");
+        console.warn('Artifact has max upgrades');
         return;
       }
 
       const upgradeTemplate = availableUpgrades[upgradeId];
       if (!upgradeTemplate) {
-        console.warn("Upgrade template not found");
+        console.warn('Upgrade template not found');
         return;
       }
 
-      const cost = calculateUpgradeCost(
-        artifact.rank,
-        artifact.upgrades.length,
-      );
+      const cost = calculateUpgradeCost(artifact.rank, artifact.upgrades.length);
       const blacksmithXpGain = calculateUpgradeBlacksmithXpCost(
         artifact.rank,
-        artifact.upgrades.length,
+        artifact.upgrades.length
       );
 
       // Check affordability (only resources, not XP - upgrades GIVE XP!)
       const canAfford = (Object.keys(cost) as Array<keyof Resources>).every(
-        (resource) => resources[resource] >= cost[resource],
+        (resource) => resources[resource] >= cost[resource]
       );
 
       if (!canAfford) {
-        console.warn("Cannot afford upgrade", { cost, resources });
+        console.warn('Cannot afford upgrade', { cost, resources });
         return;
       }
 
@@ -262,7 +250,7 @@ export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
       };
 
       console.log(
-        `⚒️ Upgraded ${artifact.name} with ${upgradeTemplate.name} (+${blacksmithXpGain} blacksmith XP)`,
+        `⚒️ Upgraded ${artifact.name} with ${upgradeTemplate.name} (+${blacksmithXpGain} blacksmith XP)`
       );
 
       if (isEquipped) {
@@ -274,9 +262,7 @@ export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
         }));
       } else {
         set((state) => ({
-          inventory: state.inventory.map((a) =>
-            a.id === artifactId ? upgradedArtifact : a,
-          ),
+          inventory: state.inventory.map((a) => (a.id === artifactId ? upgradedArtifact : a)),
         }));
       }
 
@@ -289,7 +275,7 @@ export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
       const artifact = state.inventory.find((a) => a.id === artifactId);
 
       if (!artifact) {
-        console.warn("Artifact not found in inventory");
+        console.warn('Artifact not found in inventory');
         return;
       }
 
@@ -328,11 +314,11 @@ export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
 
     destroyArtifactsUnderRank: (maxRank, onSuccess) => {
       const state = get();
-      const rankOrder: ArtifactRank[] = ["E", "D", "C", "B", "A", "S"];
+      const rankOrder: ArtifactRank[] = ['E', 'D', 'C', 'B', 'A', 'S'];
       const maxRankIndex = rankOrder.indexOf(maxRank);
 
       if (maxRankIndex === -1) {
-        console.warn("Invalid rank");
+        console.warn('Invalid rank');
         return;
       }
 
@@ -343,7 +329,7 @@ export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
       });
 
       if (artifactsToDestroy.length === 0) {
-        console.warn("No artifacts to destroy");
+        console.warn('No artifacts to destroy');
         return;
       }
 
@@ -374,7 +360,7 @@ export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
       });
 
       console.log(
-        `💥 Destroyed ${artifactsToDestroy.length} artifacts (≤${maxRank}-Rank) for ${totalEssence} essence`,
+        `💥 Destroyed ${artifactsToDestroy.length} artifacts (≤${maxRank}-Rank) for ${totalEssence} essence`
       );
 
       set((state) => ({

@@ -1,6 +1,6 @@
-import { createStore } from "@ts-query/core";
-import type { Resources, ResourceCaps } from "./types";
-import { initialResearch as baseInitialResearch } from "../data/initialResearch";
+import { createStore } from '@ts-query/core';
+import type { Resources, ResourceCaps } from './types';
+import { initialResearch as baseInitialResearch } from '../data/initialResearch';
 
 // Research/Tech types
 export interface Research {
@@ -30,7 +30,7 @@ export interface ResearchState {
   purchaseResearch: (
     researchId: string,
     getKnowledge: () => number,
-    onSuccess: (cost: number, newResearch: Record<string, Research>) => void,
+    onSuccess: (cost: number, newResearch: Record<string, Research>) => void
   ) => void;
   reset: () => void;
 }
@@ -38,7 +38,7 @@ export interface ResearchState {
 // Use initial research from data file
 const initialResearch = baseInitialResearch;
 
-const STORAGE_KEY = "arise-research-storage";
+const STORAGE_KEY = 'arise-research-storage';
 
 const loadPersistedState = (): Partial<ResearchState> | null => {
   try {
@@ -47,19 +47,16 @@ const loadPersistedState = (): Partial<ResearchState> | null => {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.error("Failed to load research state:", error);
+    console.error('Failed to load research state:', error);
   }
   return null;
 };
 
 const persistState = (state: ResearchState) => {
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ research: state.research }),
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ research: state.research }));
   } catch (error) {
-    console.error("Failed to persist research state:", error);
+    console.error('Failed to persist research state:', error);
   }
 };
 
@@ -83,9 +80,7 @@ export const useResearchStore = createStore<ResearchState>((set, get) => {
 
       // Check prerequisites
       if (research.requires) {
-        const hasPrereqs = research.requires.every(
-          (reqId) => get().research[reqId]?.researched,
-        );
+        const hasPrereqs = research.requires.every((reqId) => get().research[reqId]?.researched);
         if (!hasPrereqs) return;
       }
 

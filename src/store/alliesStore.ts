@@ -1,7 +1,7 @@
-import { createStore } from "@ts-query/core";
-import type { Ally } from "./types";
+import { createStore } from '@ts-query/core';
+import type { Ally } from './types';
 
-const STORAGE_KEY = "arise-allies-state";
+const STORAGE_KEY = 'arise-allies-state';
 
 // Counter to ensure unique ally IDs even when recruited in the same millisecond
 let allyIdCounter = 0;
@@ -12,11 +12,7 @@ export interface AlliesState {
   // Actions
   recruitAlly: (name: string, dungeonId: string) => Ally; // For named allies from dungeons (unique)
   recruitGenericAlly: (name: string, rank: string) => Ally; // For generic allies from attraction (can have multiples)
-  addXpToAlly: (
-    allyId: string,
-    xp: number,
-    onLevelUp?: (newLevel: number) => void,
-  ) => void;
+  addXpToAlly: (allyId: string, xp: number, onLevelUp?: (newLevel: number) => void) => void;
   getAlliesForDungeon: (dungeonId: string) => Ally[];
   reset: () => void;
 }
@@ -32,7 +28,7 @@ const loadPersistedState = (): Partial<AlliesState> | null => {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.error("Failed to load allies state:", error);
+    console.error('Failed to load allies state:', error);
   }
   return null;
 };
@@ -43,10 +39,10 @@ const persistState = (state: AlliesState) => {
       STORAGE_KEY,
       JSON.stringify({
         allies: state.allies,
-      }),
+      })
     );
   } catch (error) {
-    console.error("Failed to persist allies state:", error);
+    console.error('Failed to persist allies state:', error);
   }
 };
 
@@ -65,7 +61,7 @@ export const useAlliesStore = createStore<AlliesState>((set, get) => {
       // Check if this named ally already exists (by name and dungeonId)
       // Named allies from dungeons are unique
       const existingAlly = get().allies.find(
-        (a) => a.name === name && a.originDungeonId === dungeonId,
+        (a) => a.name === name && a.originDungeonId === dungeonId
       );
       if (existingAlly) {
         console.warn(`Named ally ${name} already recruited from ${dungeonId}`);
@@ -75,7 +71,7 @@ export const useAlliesStore = createStore<AlliesState>((set, get) => {
       const newAlly: Ally = {
         id: `ally-${Date.now()}-${allyIdCounter++}`,
         name,
-        type: "ally",
+        type: 'ally',
         originDungeonId: dungeonId,
         level: 1,
         xp: 0,
@@ -95,8 +91,8 @@ export const useAlliesStore = createStore<AlliesState>((set, get) => {
       const newAlly: Ally = {
         id: `ally-${Date.now()}-${allyIdCounter++}`,
         name: `${name} #${get().allies.filter((a) => a.name.startsWith(name)).length + 1}`,
-        type: "ally",
-        originDungeonId: "recruited", // Mark as recruited with attraction
+        type: 'ally',
+        originDungeonId: 'recruited', // Mark as recruited with attraction
         level: 1,
         xp: 0,
         xpToNextLevel: calculateXpToNextLevel(1),

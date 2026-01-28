@@ -1,11 +1,18 @@
 import { useStore } from '@ts-query/react';
-import { gameStore, useBuildingsStore, useResearchStore, useHunterStore, useArtifactsStore, getEffectiveHunterStats } from '../store/gameStore';
+import {
+  gameStore,
+  useBuildingsStore,
+  useResearchStore,
+  useHunterStore,
+  useArtifactsStore,
+  getEffectiveHunterStats,
+} from '../store/gameStore';
 import type { Resources, Building } from '../store/gameStore';
 import { useMemo } from 'react';
 import {
   calculateGlobalProductionMultiplier,
   calculateBuildingEfficiency,
-  calculateBuildingSynergy
+  calculateBuildingSynergy,
 } from '../lib/calculations/resourceCalculations';
 
 // Simplified hooks that directly use the substores
@@ -93,19 +100,25 @@ export const useAllResourceRatesQuery = () => {
             // Each stat point gives +0.5% to its associated resource production
             // Use effective stats (base + artifacts) to match tick calculation
             if (resource === 'essence') {
-              production *= (1 + effectiveStats.strength / 200);
+              production *= 1 + effectiveStats.strength / 200;
             } else if (resource === 'crystals') {
-              production *= (1 + effectiveStats.sense / 200);
+              production *= 1 + effectiveStats.sense / 200;
             } else if (resource === 'gold') {
-              production *= (1 + effectiveStats.agility / 200);
+              production *= 1 + effectiveStats.agility / 200;
             } else if (resource === 'souls') {
-              production *= (1 + effectiveStats.vitality / 200);
+              production *= 1 + effectiveStats.vitality / 200;
             } else if (resource === 'knowledge') {
-              production *= (1 + effectiveStats.intelligence / 200);
+              production *= 1 + effectiveStats.intelligence / 200;
             } else {
               // Attraction and gems scale with average of all stats
-              const avgStat = (effectiveStats.strength + effectiveStats.agility + effectiveStats.intelligence + effectiveStats.vitality + effectiveStats.sense) / 5;
-              production *= (1 + avgStat / 200);
+              const avgStat =
+                (effectiveStats.strength +
+                  effectiveStats.agility +
+                  effectiveStats.intelligence +
+                  effectiveStats.vitality +
+                  effectiveStats.sense) /
+                5;
+              production *= 1 + avgStat / 200;
             }
 
             result[resource as keyof Resources] += production;

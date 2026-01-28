@@ -1,9 +1,27 @@
 import { useState } from 'react';
 import { useStore } from '@ts-query/react';
-import { useBuildingsQuery, useResourcesQuery, useResearchQuery, useHunterQuery } from '../queries/gameQueries';
-import { getBuildingCost, canAffordBuilding, purchaseBuilding, purchaseBuildingBulk, getEffectiveHunterStats, useArtifactsStore } from '../store/gameStore';
+import {
+  useBuildingsQuery,
+  useResourcesQuery,
+  useResearchQuery,
+  useHunterQuery,
+} from '../queries/gameQueries';
+import {
+  getBuildingCost,
+  canAffordBuilding,
+  purchaseBuilding,
+  purchaseBuildingBulk,
+  getEffectiveHunterStats,
+  useArtifactsStore,
+} from '../store/gameStore';
 import type { Resources, Building } from '../store/gameStore';
-import { calculateBulkBuildingCost, calculateMaxBuildingPurchases, calculateBuildingEfficiency, calculateBuildingSynergy, calculateGlobalProductionMultiplier } from '../lib/calculations/resourceCalculations';
+import {
+  calculateBulkBuildingCost,
+  calculateMaxBuildingPurchases,
+  calculateBuildingEfficiency,
+  calculateBuildingSynergy,
+  calculateGlobalProductionMultiplier,
+} from '../lib/calculations/resourceCalculations';
 import { Box, Heading, Button, Text, Stack } from '@ts-query/ui-react';
 import { OwnedBadge } from './OwnedBadge';
 
@@ -25,8 +43,8 @@ export const BuildingList = () => {
   // Check if a building is unlocked
   const isBuildingUnlocked = (buildingId: string): boolean => {
     // Find research that unlocks this building
-    const unlockingResearch = Object.values(research).find(
-      (tech) => tech.unlocks?.includes(buildingId)
+    const unlockingResearch = Object.values(research).find((tech) =>
+      tech.unlocks?.includes(buildingId)
     );
 
     // If no research unlocks it, it's available by default
@@ -72,21 +90,40 @@ export const BuildingList = () => {
 
           // Apply hunter stat bonuses
           if (resource === 'essence') {
-            production *= (1 + effectiveStats.strength / 200);
+            production *= 1 + effectiveStats.strength / 200;
           } else if (resource === 'crystals') {
-            production *= (1 + effectiveStats.sense / 200);
+            production *= 1 + effectiveStats.sense / 200;
           } else if (resource === 'gold') {
-            production *= (1 + effectiveStats.agility / 200);
+            production *= 1 + effectiveStats.agility / 200;
           } else if (resource === 'souls') {
-            production *= (1 + effectiveStats.vitality / 200);
+            production *= 1 + effectiveStats.vitality / 200;
           } else if (resource === 'knowledge') {
-            production *= (1 + effectiveStats.intelligence / 200);
+            production *= 1 + effectiveStats.intelligence / 200;
           } else {
-            const avgStat = (effectiveStats.strength + effectiveStats.agility + effectiveStats.intelligence + effectiveStats.vitality + effectiveStats.sense) / 5;
-            production *= (1 + avgStat / 200);
+            const avgStat =
+              (effectiveStats.strength +
+                effectiveStats.agility +
+                effectiveStats.intelligence +
+                effectiveStats.vitality +
+                effectiveStats.sense) /
+              5;
+            production *= 1 + avgStat / 200;
           }
 
-          const icon = resource === 'essence' ? '🔮' : resource === 'crystals' ? '💎' : resource === 'gold' ? '💰' : resource === 'souls' ? '👻' : resource === 'attraction' ? '⭐' : resource === 'knowledge' ? '📚' : '💠';
+          const icon =
+            resource === 'essence'
+              ? '🔮'
+              : resource === 'crystals'
+                ? '💎'
+                : resource === 'gold'
+                  ? '💰'
+                  : resource === 'souls'
+                    ? '👻'
+                    : resource === 'attraction'
+                      ? '⭐'
+                      : resource === 'knowledge'
+                        ? '📚'
+                        : '💠';
           parts.push(`${icon} +${production.toFixed(2)}/s`);
         }
       });
@@ -104,9 +141,11 @@ export const BuildingList = () => {
       if (building.increasesCaps.crystals) parts.push(`💎 Cap +${building.increasesCaps.crystals}`);
       if (building.increasesCaps.gold) parts.push(`💰 Cap +${building.increasesCaps.gold}`);
       if (building.increasesCaps.souls) parts.push(`👻 Cap +${building.increasesCaps.souls}`);
-      if (building.increasesCaps.attraction) parts.push(`⭐ Cap +${building.increasesCaps.attraction}`);
+      if (building.increasesCaps.attraction)
+        parts.push(`⭐ Cap +${building.increasesCaps.attraction}`);
       if (building.increasesCaps.gems) parts.push(`💠 Cap +${building.increasesCaps.gems}`);
-      if (building.increasesCaps.knowledge) parts.push(`📚 Cap +${building.increasesCaps.knowledge}`);
+      if (building.increasesCaps.knowledge)
+        parts.push(`📚 Cap +${building.increasesCaps.knowledge}`);
     }
 
     return parts.length > 0 ? parts.join(', ') : null;
@@ -146,7 +185,14 @@ export const BuildingList = () => {
         border: '1px solid var(--border-color)',
       }}
     >
-      <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+      <Box
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '15px',
+        }}
+      >
         <Heading level={3} style={{ color: 'var(--accent-teal)' }}>
           🏗️ Buildings
         </Heading>
@@ -175,73 +221,80 @@ export const BuildingList = () => {
           .map((building) => {
             const cost = getBulkCost(building);
             const canAfford = canAffordBuilding(resources, cost);
-            const quantity = bulkAmount === 'max' ? calculateMaxBuildingPurchases(building, resources) : bulkAmount;
+            const quantity =
+              bulkAmount === 'max'
+                ? calculateMaxBuildingPurchases(building, resources)
+                : bulkAmount;
 
             return (
-            <Box
-              key={building.id}
-              bg="var(--bg-tertiary)"
-              p={3.75}
-              rounded="4px"
-              style={{
-                border: canAfford
-                  ? '2px solid var(--accent-teal)'
-                  : '2px solid var(--border-color)',
-                boxShadow: canAfford
-                  ? '0 0 15px var(--border-glow)'
-                  : 'none',
-              }}
-            >
               <Box
-                mb={2}
+                key={building.id}
+                bg="var(--bg-tertiary)"
+                p={3.75}
+                rounded="4px"
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
+                  border: canAfford
+                    ? '2px solid var(--accent-teal)'
+                    : '2px solid var(--border-color)',
+                  boxShadow: canAfford ? '0 0 15px var(--border-glow)' : 'none',
                 }}
               >
-                <Box style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Text
-                    fontSize="18px"
-                    fontWeight="bold"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    {building.name}
-                  </Text>
-                  <OwnedBadge count={building.count} />
-                </Box>
-                <Button
-                  onClick={() => handlePurchase(building)}
-                  disabled={!canAfford || quantity === 0}
-                  size="sm"
+                <Box
+                  mb={2}
                   style={{
-                    background: canAfford ? 'var(--accent-teal)' : 'var(--bg-tertiary)',
-                    color: canAfford ? '#000' : 'var(--text-dim)',
-                    border: canAfford ? '1px solid var(--accent-teal)' : '1px solid var(--border-color)',
-                    fontWeight: 'bold',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                   }}
                 >
-                  {bulkAmount === 1 ? 'Build' : `Build x${quantity}`}
-                </Button>
+                  <Box style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Text
+                      fontSize="18px"
+                      fontWeight="bold"
+                      style={{ color: 'var(--text-primary)' }}
+                    >
+                      {building.name}
+                    </Text>
+                    <OwnedBadge count={building.count} />
+                  </Box>
+                  <Button
+                    onClick={() => handlePurchase(building)}
+                    disabled={!canAfford || quantity === 0}
+                    size="sm"
+                    style={{
+                      background: canAfford ? 'var(--accent-teal)' : 'var(--bg-tertiary)',
+                      color: canAfford ? '#000' : 'var(--text-dim)',
+                      border: canAfford
+                        ? '1px solid var(--accent-teal)'
+                        : '1px solid var(--border-color)',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {bulkAmount === 1 ? 'Build' : `Build x${quantity}`}
+                  </Button>
+                </Box>
+                <Box style={{ fontSize: '14px' }}>
+                  {building.description && (
+                    <Text
+                      style={{
+                        color: 'var(--text-secondary)',
+                        marginBottom: '4px',
+                        fontStyle: 'italic',
+                      }}
+                    >
+                      {building.description}
+                    </Text>
+                  )}
+                  <Text style={{ color: 'var(--text-secondary)' }}>Cost: {renderCost(cost)}</Text>
+                  {renderProduction(building) && (
+                    <Text style={{ color: 'var(--accent-teal)', marginTop: '4px' }}>
+                      {renderProduction(building)}
+                    </Text>
+                  )}
+                </Box>
               </Box>
-              <Box style={{ fontSize: '14px' }}>
-                {building.description && (
-                  <Text style={{ color: 'var(--text-secondary)', marginBottom: '4px', fontStyle: 'italic' }}>
-                    {building.description}
-                  </Text>
-                )}
-                <Text style={{ color: 'var(--text-secondary)' }}>
-                  Cost: {renderCost(cost)}
-                </Text>
-                {renderProduction(building) && (
-                  <Text style={{ color: 'var(--accent-teal)', marginTop: '4px' }}>
-                    {renderProduction(building)}
-                  </Text>
-                )}
-              </Box>
-            </Box>
-          );
-        })}
+            );
+          })}
       </Stack>
     </Box>
   );

@@ -1,6 +1,6 @@
 /**
  * Cache setup using ts-query's tiered caching.
- * 
+ *
  * L1: In-process QueryClient cache (per server instance)
  * L2: Shared cache (InMemory for dev, Redis for prod)
  * L3: Database (SQLite for dev, PostgreSQL for prod)
@@ -91,13 +91,12 @@ export const queryClient = new QueryClient({
 
 // TTL constants for different data types
 export const CACHE_TTL = {
-  GAME_STATE: 5_000,      // 5 seconds - frequently updated
-  LEADERBOARD: 30_000,    // 30 seconds - expensive query, updates less often
-  PLAYER_STATS: 10_000,   // 10 seconds - viewed by others
+  GAME_STATE: 5_000, // 5 seconds - frequently updated
+  LEADERBOARD: 30_000, // 30 seconds - expensive query, updates less often
+  PLAYER_STATS: 10_000, // 10 seconds - viewed by others
 } as const;
 
 // Metrics for monitoring
 export function getCacheStats() {
   return sharedCacheAdapter.getStats();
 }
-

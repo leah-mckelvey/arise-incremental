@@ -22,4 +22,3 @@ export const testDb = drizzle(testClient, { schema });
 export const closeTestDb = async () => {
   await testClient.close();
 };
-

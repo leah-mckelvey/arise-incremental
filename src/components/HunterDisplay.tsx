@@ -28,14 +28,22 @@ export const HunterDisplay = () => {
 
   const getRankColor = (rank: string) => {
     switch (rank) {
-      case 'E': return '#8B4513';
-      case 'D': return '#CD7F32';
-      case 'C': return '#C0C0C0';
-      case 'B': return '#FFD700';
-      case 'A': return '#00CED1';
-      case 'S': return '#9370DB';
-      case 'National': return '#FF1493';
-      default: return '#666';
+      case 'E':
+        return '#8B4513';
+      case 'D':
+        return '#CD7F32';
+      case 'C':
+        return '#C0C0C0';
+      case 'B':
+        return '#FFD700';
+      case 'A':
+        return '#00CED1';
+      case 'S':
+        return '#9370DB';
+      case 'National':
+        return '#FF1493';
+      default:
+        return '#666';
     }
   };
 
@@ -78,7 +86,10 @@ export const HunterDisplay = () => {
 
       {/* XP Bar */}
       <Box mb={4}>
-        <Box mb={1} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box
+          mb={1}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        >
           <Text fontSize="14px" fontWeight="bold" style={{ color: 'var(--text-primary)' }}>
             ✨ Experience
           </Text>
@@ -107,7 +118,8 @@ export const HunterDisplay = () => {
             style={{
               width: `${xpPercentage}%`,
               height: '100%',
-              background: 'linear-gradient(90deg, var(--accent-teal) 0%, var(--accent-purple) 100%)',
+              background:
+                'linear-gradient(90deg, var(--accent-teal) 0%, var(--accent-purple) 100%)',
               transition: 'width 0.3s ease',
               boxShadow: '0 0 10px var(--accent-teal)',
             }}
@@ -149,7 +161,8 @@ export const HunterDisplay = () => {
             color: 'var(--text-primary)',
           }}
         >
-          📊 Stats {hunter.statPoints > 0 && (
+          📊 Stats{' '}
+          {hunter.statPoints > 0 && (
             <span style={{ color: 'var(--accent-teal)' }}>
               ({hunter.statPoints} points available)
             </span>
@@ -188,11 +201,12 @@ export const HunterDisplay = () => {
                     {stat === 'intelligence' && '🧠'}
                     {stat === 'vitality' && '❤️'}
                     {stat === 'sense' && '👁️'}
-                    {stat === 'authority' && '👑'}
-                    {' '}{stat}: <span style={{ color: 'var(--accent-teal)' }}>{baseStat}</span>
+                    {stat === 'authority' && '👑'} {stat}:{' '}
+                    <span style={{ color: 'var(--accent-teal)' }}>{baseStat}</span>
                     {hasBonus && (
                       <span style={{ color: 'var(--accent-gold)', fontSize: '12px' }}>
-                        {' '}→ {effectiveStat} (+{bonus}%)
+                        {' '}
+                        → {effectiveStat} (+{bonus}%)
                       </span>
                     )}
                   </Text>
@@ -203,7 +217,10 @@ export const HunterDisplay = () => {
                   style={{
                     background: hunter.statPoints > 0 ? 'var(--accent-teal)' : 'var(--bg-tertiary)',
                     color: hunter.statPoints > 0 ? '#000' : 'var(--text-dim)',
-                    border: hunter.statPoints > 0 ? '1px solid var(--accent-teal)' : '1px solid var(--border-color)',
+                    border:
+                      hunter.statPoints > 0
+                        ? '1px solid var(--accent-teal)'
+                        : '1px solid var(--border-color)',
                     fontWeight: 'bold',
                   }}
                   size="sm"
@@ -218,4 +235,3 @@ export const HunterDisplay = () => {
     </Box>
   );
 };
-

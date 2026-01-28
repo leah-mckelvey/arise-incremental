@@ -117,13 +117,19 @@ export function NotificationDisplay() {
             }}
           >
             {/* Header */}
-            <Box style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+            <Box
+              style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}
+            >
               <Text style={{ fontSize: '32px' }}>{getIcon(notification.type)}</Text>
               <Box>
-                <Text style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary)' }}>
+                <Text
+                  style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary)' }}
+                >
                   {notification.title}
                 </Text>
-                <Text style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                <Text
+                  style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}
+                >
                   {notification.message}
                 </Text>
               </Box>
@@ -165,4 +171,3 @@ export function NotificationDisplay() {
     </>
   );
 }
-

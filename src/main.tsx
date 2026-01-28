@@ -1,11 +1,21 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
-import { gameStore, purchaseBuilding, purchaseResearch, allocateStat, craftArtifact, equipArtifact, unequipArtifact, upgradeArtifact, useArtifactsStore } from './store/gameStore'
-import { useBuildingsStore } from './store/buildingsStore'
-import { useResearchStore } from './store/researchStore'
-import { useHunterStore } from './store/hunterStore'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import App from './App.tsx';
+import {
+  gameStore,
+  purchaseBuilding,
+  purchaseResearch,
+  allocateStat,
+  craftArtifact,
+  equipArtifact,
+  unequipArtifact,
+  upgradeArtifact,
+  useArtifactsStore,
+} from './store/gameStore';
+import { useBuildingsStore } from './store/buildingsStore';
+import { useResearchStore } from './store/researchStore';
+import { useHunterStore } from './store/hunterStore';
 
 // Expose stores to window for debugging (dev mode only)
 if (import.meta.env.DEV && typeof window !== 'undefined') {
@@ -53,5 +63,5 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
-  </StrictMode>,
-)
+  </StrictMode>
+);

@@ -126,7 +126,7 @@ export const initialResearch: Record<string, Research> = {
       },
     },
   },
-  
+
   // Tier 2: Synergistic upgrades
   manaResonance: {
     id: 'manaResonance',
@@ -142,7 +142,8 @@ export const initialResearch: Record<string, Research> = {
   compoundedLearning: {
     id: 'compoundedLearning',
     name: '🧠 Compounded Learning',
-    description: 'Each Training Ground increases knowledge production of all Training Grounds by 10%',
+    description:
+      'Each Training Ground increases knowledge production of all Training Grounds by 10%',
     cost: 75,
     researched: false,
     requires: ['knowledgeGeneration'],
@@ -150,7 +151,7 @@ export const initialResearch: Record<string, Research> = {
       // Synergy: Training Grounds scale with each other
     },
   },
-  
+
   // Tier 3: Major multipliers
   industrialScale: {
     id: 'industrialScale',
@@ -218,11 +219,12 @@ export const initialResearch: Record<string, Research> = {
     cost: 500,
     researched: false,
     requires: ['industrialScale', 'compoundedLearning'],
+    unlocks: ['soulHarvester'],
     effects: {
       // Special: souls provide global production multiplier
     },
   },
-  
+
   // Additional synergies
   crystalSynergy: {
     id: 'crystalSynergy',
@@ -246,7 +248,7 @@ export const initialResearch: Record<string, Research> = {
       // Synergy: hunterGuild scales with itself
     },
   },
-  
+
   // Late game exponential
   knowledgeLoop: {
     id: 'knowledgeLoop',
@@ -262,7 +264,8 @@ export const initialResearch: Record<string, Research> = {
   transcendence: {
     id: 'transcendence',
     name: '⚡ Transcendence',
-    description: 'All buildings produce +1% per hunter level. Caps increased by +10% per hunter level',
+    description:
+      'All buildings produce +1% per hunter level. Caps increased by +10% per hunter level',
     cost: 2000,
     researched: false,
     requires: ['knowledgeLoop'],
@@ -318,8 +321,9 @@ export const initialResearch: Record<string, Research> = {
   },
   monarchsDomain: {
     id: 'monarchsDomain',
-    name: '⚔️ Monarch\'s Domain',
-    description: 'Unlock the ability to send companions on solo missions (passive resource generation)',
+    name: "⚔️ Monarch's Domain",
+    description:
+      'Unlock the ability to send companions on solo missions (passive resource generation)',
     cost: 800,
     researched: false,
     requires: ['leadershipAura', 'shadowMastery'],
@@ -398,4 +402,3 @@ export const initialResearch: Record<string, Research> = {
     },
   },
 };
-

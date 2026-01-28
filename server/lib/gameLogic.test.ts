@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  applyPassiveIncome,
-  calculateResourceCaps,
-  createEmptyResources,
-} from './gameLogic.js';
+import { applyPassiveIncome, calculateResourceCaps, createEmptyResources } from './gameLogic.js';
 import type { Resources, Building, Research, HunterStats } from '../../shared/types.js';
 
 describe('gameLogic - Resource Caps (Dynamic Calculation)', () => {
@@ -101,7 +97,15 @@ describe('gameLogic - Resource Caps (Dynamic Calculation)', () => {
       baseCost: createEmptyResources(),
       costMultiplier: 1.15,
       count: 1,
-      increasesCaps: { essence: 50, crystals: 0, gold: 0, souls: 0, attraction: 0, gems: 0, knowledge: 0 },
+      increasesCaps: {
+        essence: 50,
+        crystals: 0,
+        gold: 0,
+        souls: 0,
+        attraction: 0,
+        gems: 0,
+        knowledge: 0,
+      },
       produces: undefined,
       perSecond: undefined,
       xpPerSecond: undefined,
@@ -114,7 +118,15 @@ describe('gameLogic - Resource Caps (Dynamic Calculation)', () => {
       baseCost: createEmptyResources(),
       costMultiplier: 1.2,
       count: 1,
-      increasesCaps: { essence: 100, crystals: 0, gold: 0, souls: 0, attraction: 0, gems: 0, knowledge: 0 },
+      increasesCaps: {
+        essence: 100,
+        crystals: 0,
+        gold: 0,
+        souls: 0,
+        attraction: 0,
+        gems: 0,
+        knowledge: 0,
+      },
       produces: undefined,
       perSecond: undefined,
       xpPerSecond: undefined,
@@ -148,7 +160,15 @@ describe('gameLogic - Resource Caps (Dynamic Calculation)', () => {
       baseCost: createEmptyResources(),
       costMultiplier: 1.15,
       count: 1,
-      increasesCaps: { essence: 50, crystals: 0, gold: 0, souls: 0, attraction: 0, gems: 0, knowledge: 0 },
+      increasesCaps: {
+        essence: 50,
+        crystals: 0,
+        gold: 0,
+        souls: 0,
+        attraction: 0,
+        gems: 0,
+        knowledge: 0,
+      },
       produces: undefined,
       perSecond: undefined,
       xpPerSecond: undefined,
@@ -184,7 +204,15 @@ describe('gameLogic - Resource Caps (Dynamic Calculation)', () => {
       baseCost: createEmptyResources(),
       costMultiplier: 1.15,
       count: 2,
-      increasesCaps: { essence: 50, crystals: 0, gold: 0, souls: 0, attraction: 0, gems: 0, knowledge: 0 },
+      increasesCaps: {
+        essence: 50,
+        crystals: 0,
+        gold: 0,
+        souls: 0,
+        attraction: 0,
+        gems: 0,
+        knowledge: 0,
+      },
       produces: undefined,
       perSecond: undefined,
       xpPerSecond: undefined,
@@ -459,4 +487,3 @@ describe('gameLogic - Passive Income', () => {
     console.log('Actual cap should be 150 (100 base + 50 from vault)');
   });
 });
-

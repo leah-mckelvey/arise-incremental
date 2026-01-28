@@ -1,12 +1,7 @@
-import { Router } from "express";
-import { eq, sql } from "drizzle-orm";
-import { db as defaultDb, type Database } from "../db/client.js";
-import {
-  users,
-  gameStates,
-  transactions,
-  type GameState,
-} from "../db/schema.js";
+import { Router } from 'express';
+import { eq, sql } from 'drizzle-orm';
+import { db as defaultDb, type Database } from '../db/client.js';
+import { users, gameStates, transactions, type GameState } from '../db/schema.js';
 
 // Module-level db instance - can be overridden for testing via setDatabase()
 let db: Database = defaultDb;
@@ -48,8 +43,8 @@ export async function debugReadGameState(userId: string): Promise<unknown> {
 export function getDbName(): string {
   return dbName;
 }
-import { authMiddleware, type AuthRequest } from "../middleware/auth.js";
-import { queryClient, CACHE_TTL } from "../db/cache.js";
+import { authMiddleware, type AuthRequest } from '../middleware/auth.js';
+import { queryClient, CACHE_TTL } from '../db/cache.js';
 import {
   addResources,
   subtractResources,
@@ -66,11 +61,11 @@ import {
   calculateResourceCaps,
   calculateGatherXp,
   BASE_RESOURCE_CAPS,
-} from "../lib/gameLogic.js";
-import { createTransactionLogger } from "../lib/debugLogger.js";
-import { initialBuildings } from "../data/initialBuildings.js";
-import { initialDungeons } from "../data/initialDungeons.js";
-import { initialResearch } from "../data/initialResearch.js";
+} from '../lib/gameLogic.js';
+import { createTransactionLogger } from '../lib/debugLogger.js';
+import { initialBuildings } from '../data/initialBuildings.js';
+import { initialDungeons } from '../data/initialDungeons.js';
+import { initialResearch } from '../data/initialResearch.js';
 import type {
   GameStateResponse,
   TransactionResponse,
@@ -89,7 +84,7 @@ import type {
   Dungeon,
   ActiveDungeon,
   HunterStats,
-} from "../../shared/types.js";
+} from '../../shared/types.js';
 
 export const gameRouter = Router();
 
@@ -112,7 +107,7 @@ function getLastUpdateTime(lastUpdate: Date | null | undefined): number {
 function transformToGameStateDTO(
   gameState: GameState,
   resources: Resources,
-  resourceCaps: ResourceCaps,
+  resourceCaps: ResourceCaps
 ): GameStateDTO {
   return {
     version: gameState.version,
@@ -154,13 +149,12 @@ function transformToGameStateDTO(
       },
     },
     buildings: gameState.buildings as Record<string, Building>,
-    artifacts: gameState.artifacts as unknown as GameStateDTO["artifacts"],
-    dungeons: gameState.dungeons as unknown as GameStateDTO["dungeons"],
-    activeDungeons:
-      gameState.activeDungeons as unknown as GameStateDTO["activeDungeons"],
-    allies: gameState.allies as unknown as GameStateDTO["allies"],
-    shadows: gameState.shadows as unknown as GameStateDTO["shadows"],
-    research: gameState.research as unknown as GameStateDTO["research"],
+    artifacts: gameState.artifacts as unknown as GameStateDTO['artifacts'],
+    dungeons: gameState.dungeons as unknown as GameStateDTO['dungeons'],
+    activeDungeons: gameState.activeDungeons as unknown as GameStateDTO['activeDungeons'],
+    allies: gameState.allies as unknown as GameStateDTO['allies'],
+    shadows: gameState.shadows as unknown as GameStateDTO['shadows'],
+    research: gameState.research as unknown as GameStateDTO['research'],
     lastUpdate: new Date(gameState.lastUpdate).getTime(),
   };
 }
@@ -170,13 +164,13 @@ function transformToGameStateDTO(
  * Load current game state with offline gains calculation
  * Uses ts-query pattern with L1/L2/L3 caching
  */
-gameRouter.get("/state", async (req: AuthRequest, res) => {
+gameRouter.get('/state', async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
 
     // Use queryClient.getQuery for cached reads
     const gameStateQuery = queryClient.getQuery({
-      queryKey: ["gameState", userId],
+      queryKey: ['gameState', userId],
       queryFn: async () => {
         // L3: Database query
         // Ensure user exists
@@ -193,7 +187,12 @@ gameRouter.get("/state", async (req: AuthRequest, res) => {
         }
 
         // Get or create game state
-        console.log('[BACKEND STEP 1] About to query database for userId:', userId, 'using db:', dbName);
+        console.log(
+          '[BACKEND STEP 1] About to query database for userId:',
+          userId,
+          'using db:',
+          dbName
+        );
 
         let gameState = await db.query.gameStates.findFirst({
           where: eq(gameStates.userId, userId),
@@ -203,7 +202,7 @@ gameRouter.get("/state", async (req: AuthRequest, res) => {
           userId,
           found: !!gameState,
           essence: gameState?.essence,
-          id: gameState?.id
+          id: gameState?.id,
         });
 
         if (!gameState) {
@@ -236,7 +235,7 @@ gameRouter.get("/state", async (req: AuthRequest, res) => {
               hunterLevel: 1,
               hunterXp: 0,
               hunterXpToNextLevel: 100,
-              hunterRank: "E",
+              hunterRank: 'E',
               hunterStatPoints: 0,
               hunterHp: 100,
               hunterMaxHp: 100,
@@ -288,11 +287,10 @@ gameRouter.get("/state", async (req: AuthRequest, res) => {
         .where(eq(gameStates.id, gameState.id));
 
       // Update the gameState object for the response
-      gameState.dungeons =
-        initialDungeons as unknown as typeof gameState.dungeons;
+      gameState.dungeons = initialDungeons as unknown as typeof gameState.dungeons;
 
       // Invalidate cache so next fetch gets the updated dungeons
-      await queryClient.invalidateQueries(["gameState", userId]);
+      await queryClient.invalidateQueries(['gameState', userId]);
     }
 
     // Migration: If research is empty, populate with initialResearch
@@ -307,33 +305,89 @@ gameRouter.get("/state", async (req: AuthRequest, res) => {
         .where(eq(gameStates.id, gameState.id));
 
       // Update the gameState object for the response
-      gameState.research =
-        initialResearch as unknown as typeof gameState.research;
+      gameState.research = initialResearch as unknown as typeof gameState.research;
 
       // Invalidate cache so next fetch gets the updated research
-      await queryClient.invalidateQueries(["gameState", userId]);
+      await queryClient.invalidateQueries(['gameState', userId]);
+    }
+
+    // Migration: Merge in any missing building definitions (e.g., newly added buildings)
+    const existingBuildings = gameState.buildings as unknown as Record<string, Building> | null;
+    const mergedBuildings: Record<string, Building> = {
+      ...(existingBuildings ?? {}),
+    };
+    let buildingsDidChange = false;
+    for (const [buildingId, initialBuilding] of Object.entries(initialBuildings)) {
+      if (!mergedBuildings[buildingId]) {
+        mergedBuildings[buildingId] = initialBuilding;
+        buildingsDidChange = true;
+      }
+    }
+
+    if (buildingsDidChange) {
+      await db
+        .update(gameStates)
+        .set({
+          buildings: mergedBuildings,
+          updatedAt: new Date(),
+        })
+        .where(eq(gameStates.id, gameState.id));
+
+      gameState.buildings = mergedBuildings as unknown as typeof gameState.buildings;
+
+      await queryClient.invalidateQueries(['gameState', userId]);
+    }
+
+    // Migration: Merge in missing research definitions + any newly-added `unlocks` metadata
+    const existingResearch = gameState.research as unknown as Record<string, Research> | null;
+    const mergedResearch: Record<string, Research> = {
+      ...(existingResearch ?? {}),
+    };
+    let researchDidChange = false;
+    for (const [researchId, initialItem] of Object.entries(initialResearch)) {
+      const currentItem = mergedResearch[researchId];
+      if (!currentItem) {
+        mergedResearch[researchId] = initialItem;
+        researchDidChange = true;
+        continue;
+      }
+
+      if (initialItem.unlocks && currentItem.unlocks === undefined) {
+        mergedResearch[researchId] = {
+          ...currentItem,
+          unlocks: initialItem.unlocks,
+        };
+        researchDidChange = true;
+      }
+    }
+
+    if (researchDidChange) {
+      await db
+        .update(gameStates)
+        .set({
+          research: mergedResearch,
+          updatedAt: new Date(),
+        })
+        .where(eq(gameStates.id, gameState.id));
+
+      gameState.research = mergedResearch as unknown as typeof gameState.research;
+
+      await queryClient.invalidateQueries(['gameState', userId]);
     }
 
     // Cleanup: Remove expired dungeons from activeDungeons
-    const activeDungeons =
-      gameState.activeDungeons as unknown as ActiveDungeon[];
+    const activeDungeons = gameState.activeDungeons as unknown as ActiveDungeon[];
     if (activeDungeons && activeDungeons.length > 0) {
       const currentTime = Date.now();
-      const expiredDungeons = activeDungeons.filter(
-        (ad) => currentTime >= ad.endTime,
-      );
+      const expiredDungeons = activeDungeons.filter((ad) => currentTime >= ad.endTime);
 
       if (expiredDungeons.length > 0) {
-        const cleanedActiveDungeons = activeDungeons.filter(
-          (ad) => currentTime < ad.endTime,
-        );
+        const cleanedActiveDungeons = activeDungeons.filter((ad) => currentTime < ad.endTime);
 
-        console.log(
-          `🧹 Cleaning up ${expiredDungeons.length} expired dungeon(s)`,
-        );
+        console.log(`🧹 Cleaning up ${expiredDungeons.length} expired dungeon(s)`);
         expiredDungeons.forEach((ad) => {
           console.log(
-            `  - ${ad.dungeonId} (expired ${((currentTime - ad.endTime) / 1000).toFixed(1)}s ago)`,
+            `  - ${ad.dungeonId} (expired ${((currentTime - ad.endTime) / 1000).toFixed(1)}s ago)`
           );
         });
 
@@ -350,7 +404,7 @@ gameRouter.get("/state", async (req: AuthRequest, res) => {
           cleanedActiveDungeons as unknown as typeof gameState.activeDungeons;
 
         // Invalidate cache so next fetch gets the cleaned state
-        await queryClient.invalidateQueries(["gameState", userId]);
+        await queryClient.invalidateQueries(['gameState', userId]);
       }
     }
 
@@ -369,7 +423,7 @@ gameRouter.get("/state", async (req: AuthRequest, res) => {
 
       if (dungeonsToUnlock.length > 0) {
         console.log(
-          `🔓 Auto-unlocking ${dungeonsToUnlock.length} dungeon(s) for level ${hunterLevel}`,
+          `🔓 Auto-unlocking ${dungeonsToUnlock.length} dungeon(s) for level ${hunterLevel}`
         );
         dungeonsToUnlock.forEach((d) => {
           console.log(`  - ${d.name} (required level: ${d.requiredLevel})`);
@@ -387,7 +441,7 @@ gameRouter.get("/state", async (req: AuthRequest, res) => {
         gameState.dungeons = dungeons as unknown as typeof gameState.dungeons;
 
         // Invalidate cache so next fetch gets the updated dungeons
-        await queryClient.invalidateQueries(["gameState", userId]);
+        await queryClient.invalidateQueries(['gameState', userId]);
       }
     }
 
@@ -435,29 +489,22 @@ gameRouter.get("/state", async (req: AuthRequest, res) => {
         },
       },
       buildings: gameState.buildings as Record<string, Building>,
-      artifacts: gameState.artifacts as unknown as GameStateDTO["artifacts"],
-      dungeons: gameState.dungeons as unknown as GameStateDTO["dungeons"],
-      activeDungeons:
-        gameState.activeDungeons as unknown as GameStateDTO["activeDungeons"],
-      allies: gameState.allies as unknown as GameStateDTO["allies"],
-      shadows: gameState.shadows as unknown as GameStateDTO["shadows"],
-      research: gameState.research as unknown as GameStateDTO["research"],
+      artifacts: gameState.artifacts as unknown as GameStateDTO['artifacts'],
+      dungeons: gameState.dungeons as unknown as GameStateDTO['dungeons'],
+      activeDungeons: gameState.activeDungeons as unknown as GameStateDTO['activeDungeons'],
+      allies: gameState.allies as unknown as GameStateDTO['allies'],
+      shadows: gameState.shadows as unknown as GameStateDTO['shadows'],
+      research: gameState.research as unknown as GameStateDTO['research'],
       lastUpdate: lastUpdateMs,
     };
 
     const offlineGainsData = calculateOfflineGains(stateDTO, lastUpdateMs, now);
 
     // Apply offline gains
-    let newResources = addResources(
-      stateDTO.resources,
-      offlineGainsData.resourceGains,
-    );
+    let newResources = addResources(stateDTO.resources, offlineGainsData.resourceGains);
     newResources = applyResourceCaps(newResources, stateDTO.resourceCaps);
 
-    const { hunter: newHunter } = processXpGain(
-      stateDTO.hunter,
-      offlineGainsData.xpGained,
-    );
+    const { hunter: newHunter } = processXpGain(stateDTO.hunter, offlineGainsData.xpGained);
 
     // Update database with new resources, XP, and timestamp
     await db
@@ -491,7 +538,7 @@ gameRouter.get("/state", async (req: AuthRequest, res) => {
       .where(eq(gameStates.id, gameState.id));
 
     // Invalidate cache after mutation
-    await queryClient.invalidateQueries(["gameState", userId]);
+    await queryClient.invalidateQueries(['gameState', userId]);
 
     const response: GameStateResponse = {
       state: {
@@ -513,8 +560,8 @@ gameRouter.get("/state", async (req: AuthRequest, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error("Error loading game state:", error);
-    res.status(500).json({ error: "Failed to load game state" });
+    console.error('Error loading game state:', error);
+    res.status(500).json({ error: 'Failed to load game state' });
   }
 });
 
@@ -522,35 +569,25 @@ gameRouter.get("/state", async (req: AuthRequest, res) => {
  * POST /api/game/gather-resource
  * Manually gather a resource (clicking buttons)
  */
-gameRouter.post("/gather-resource", async (req: AuthRequest, res) => {
+gameRouter.post('/gather-resource', async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
     const { resource, clientTxId } = req.body as GatherResourceRequest;
 
     // Create debug logger
-    const logger = createTransactionLogger(
-      "/gather-resource",
-      userId,
-      clientTxId,
-    );
+    const logger = createTransactionLogger('/gather-resource', userId, clientTxId);
 
     // Validation
     if (!resource || !clientTxId) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
     if (
-      ![
-        "essence",
-        "crystals",
-        "gold",
-        "souls",
-        "attraction",
-        "gems",
-        "knowledge",
-      ].includes(resource)
+      !['essence', 'crystals', 'gold', 'souls', 'attraction', 'gems', 'knowledge'].includes(
+        resource
+      )
     ) {
-      return res.status(400).json({ error: "Invalid resource type" });
+      return res.status(400).json({ error: 'Invalid resource type' });
     }
 
     // Anti-cheat: always gather exactly 1
@@ -572,7 +609,7 @@ gameRouter.post("/gather-resource", async (req: AuthRequest, res) => {
     });
 
     if (!gameState) {
-      return res.status(404).json({ error: "Game state not found" });
+      return res.status(404).json({ error: 'Game state not found' });
     }
 
     // Apply passive income first
@@ -617,7 +654,7 @@ gameRouter.post("/gather-resource", async (req: AuthRequest, res) => {
       gameState.hunterLevel,
       hunterStats,
       getLastUpdateTime(gameState.lastUpdate),
-      Date.now(),
+      Date.now()
     );
 
     // Apply resource gain (with cap check)
@@ -627,7 +664,7 @@ gameRouter.post("/gather-resource", async (req: AuthRequest, res) => {
       buildings,
       research,
       gameState.hunterLevel,
-      hunterStats,
+      hunterStats
     );
 
     logger.afterPassive(currentResources, dynamicCaps);
@@ -657,11 +694,7 @@ gameRouter.post("/gather-resource", async (req: AuthRequest, res) => {
       stats: hunterStats,
     };
 
-    if (
-      resource === "essence" ||
-      resource === "crystals" ||
-      resource === "gold"
-    ) {
+    if (resource === 'essence' || resource === 'crystals' || resource === 'gold') {
       const xpGain = calculateGatherXp(resource, hunterStats);
       const result = processXpGain(newHunter, xpGain);
       newHunter = result.hunter;
@@ -700,7 +733,7 @@ gameRouter.post("/gather-resource", async (req: AuthRequest, res) => {
       .where(eq(gameStates.id, gameState.id));
 
     // Invalidate cache
-    await queryClient.invalidateQueries(["gameState", userId]);
+    await queryClient.invalidateQueries(['gameState', userId]);
 
     // Fetch updated full state to return
     const updatedState = await db.query.gameStates.findFirst({
@@ -708,15 +741,11 @@ gameRouter.post("/gather-resource", async (req: AuthRequest, res) => {
     });
 
     if (!updatedState) {
-      return res.status(500).json({ error: "Failed to fetch updated state" });
+      return res.status(500).json({ error: 'Failed to fetch updated state' });
     }
 
     // Transform database row to GameStateDTO using helper
-    const stateDTO: GameStateDTO = transformToGameStateDTO(
-      updatedState,
-      newResources,
-      dynamicCaps,
-    );
+    const stateDTO: GameStateDTO = transformToGameStateDTO(updatedState, newResources, dynamicCaps);
 
     // Log success
     logger.success(newResources, dynamicCaps);
@@ -726,7 +755,7 @@ gameRouter.post("/gather-resource", async (req: AuthRequest, res) => {
       id: crypto.randomUUID(),
       userId,
       clientTxId,
-      type: "gather-resource",
+      type: 'gather-resource',
       payload: { resource, amount },
       stateAfter: stateDTO,
     });
@@ -738,8 +767,8 @@ gameRouter.post("/gather-resource", async (req: AuthRequest, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error("Error gathering resource:", error);
-    res.status(500).json({ error: "Failed to gather resource" });
+    console.error('Error gathering resource:', error);
+    res.status(500).json({ error: 'Failed to gather resource' });
   }
 });
 
@@ -747,21 +776,17 @@ gameRouter.post("/gather-resource", async (req: AuthRequest, res) => {
  * POST /api/game/purchase-building
  * Purchase a single building with anti-cheat validation
  */
-gameRouter.post("/purchase-building", async (req: AuthRequest, res) => {
+gameRouter.post('/purchase-building', async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
     const { buildingId, clientTxId } = req.body as PurchaseBuildingRequest;
 
     // Create debug logger
-    const logger = createTransactionLogger(
-      "/purchase-building",
-      userId,
-      clientTxId,
-    );
+    const logger = createTransactionLogger('/purchase-building', userId, clientTxId);
 
     // Validation
     if (!buildingId || !clientTxId) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
     // Check for duplicate transaction (idempotency)
@@ -780,14 +805,14 @@ gameRouter.post("/purchase-building", async (req: AuthRequest, res) => {
     });
 
     if (!gameState) {
-      return res.status(404).json({ error: "Game state not found" });
+      return res.status(404).json({ error: 'Game state not found' });
     }
 
     const buildings = gameState.buildings as Record<string, Building>;
     const building = buildings[buildingId];
 
     if (!building) {
-      return res.status(400).json({ error: "Invalid building ID" });
+      return res.status(400).json({ error: 'Invalid building ID' });
     }
 
     // Calculate cost
@@ -834,7 +859,7 @@ gameRouter.post("/purchase-building", async (req: AuthRequest, res) => {
       gameState.hunterLevel,
       hunterStats,
       getLastUpdateTime(gameState.lastUpdate),
-      Date.now(),
+      Date.now()
     );
 
     const currentResourceCaps = calculateResourceCaps(
@@ -842,7 +867,7 @@ gameRouter.post("/purchase-building", async (req: AuthRequest, res) => {
       buildings,
       research,
       gameState.hunterLevel,
-      hunterStats,
+      hunterStats
     );
 
     logger.afterPassive(currentResources, currentResourceCaps);
@@ -851,7 +876,7 @@ gameRouter.post("/purchase-building", async (req: AuthRequest, res) => {
     logger.validation(
       `Purchase ${buildingId}`,
       cost as unknown as Partial<Record<string, number>>,
-      currentResources,
+      currentResources
     );
 
     if (!canAffordCost(currentResources, cost)) {
@@ -864,7 +889,7 @@ gameRouter.post("/purchase-building", async (req: AuthRequest, res) => {
       const stateDTO: GameStateDTO = transformToGameStateDTO(
         gameState,
         currentResources,
-        currentResourceCaps,
+        currentResourceCaps
       );
 
       return res.status(400).json({
@@ -891,19 +916,14 @@ gameRouter.post("/purchase-building", async (req: AuthRequest, res) => {
       newBuildings,
       research,
       gameState.hunterLevel,
-      hunterStats,
+      hunterStats
     );
 
-    console.log("🏗️ PURCHASE BUILDING:", buildingId);
-    console.log(
-      "  Building count:",
-      building.count,
-      "->",
-      newBuildings[buildingId].count,
-    );
-    console.log("  Old essence cap:", gameState.essenceCap);
-    console.log("  New essence cap:", newResourceCaps.essence);
-    console.log("  Building increasesCaps:", building.increasesCaps);
+    console.log('🏗️ PURCHASE BUILDING:', buildingId);
+    console.log('  Building count:', building.count, '->', newBuildings[buildingId].count);
+    console.log('  Old essence cap:', gameState.essenceCap);
+    console.log('  New essence cap:', newResourceCaps.essence);
+    console.log('  Building increasesCaps:', building.increasesCaps);
 
     // Update database (with current timestamp for lastUpdate)
     const now = new Date();
@@ -931,7 +951,7 @@ gameRouter.post("/purchase-building", async (req: AuthRequest, res) => {
       .where(eq(gameStates.id, gameState.id));
 
     // Invalidate cache
-    await queryClient.invalidateQueries(["gameState", userId]);
+    await queryClient.invalidateQueries(['gameState', userId]);
 
     // Fetch updated full state to return
     const updatedState = await db.query.gameStates.findFirst({
@@ -939,14 +959,14 @@ gameRouter.post("/purchase-building", async (req: AuthRequest, res) => {
     });
 
     if (!updatedState) {
-      return res.status(500).json({ error: "Failed to fetch updated state" });
+      return res.status(500).json({ error: 'Failed to fetch updated state' });
     }
 
     // Transform database row to GameStateDTO using helper
     const stateDTO: GameStateDTO = transformToGameStateDTO(
       updatedState,
       newResources,
-      newResourceCaps,
+      newResourceCaps
     );
 
     // Log success
@@ -957,7 +977,7 @@ gameRouter.post("/purchase-building", async (req: AuthRequest, res) => {
       id: crypto.randomUUID(),
       userId,
       clientTxId,
-      type: "purchase_building",
+      type: 'purchase_building',
       payload: { buildingId, cost, quantity: 1 },
       stateAfter: stateDTO,
     });
@@ -969,8 +989,8 @@ gameRouter.post("/purchase-building", async (req: AuthRequest, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error("Error purchasing building:", error);
-    res.status(500).json({ error: "Failed to purchase building" });
+    console.error('Error purchasing building:', error);
+    res.status(500).json({ error: 'Failed to purchase building' });
   }
 });
 
@@ -978,28 +998,21 @@ gameRouter.post("/purchase-building", async (req: AuthRequest, res) => {
  * POST /api/game/purchase-bulk-building
  * Purchase multiple buildings at once with anti-cheat validation
  */
-gameRouter.post("/purchase-bulk-building", async (req: AuthRequest, res) => {
+gameRouter.post('/purchase-bulk-building', async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
-    const { buildingId, quantity, clientTxId } =
-      req.body as PurchaseBulkBuildingRequest;
+    const { buildingId, quantity, clientTxId } = req.body as PurchaseBulkBuildingRequest;
 
     // Create debug logger
-    const logger = createTransactionLogger(
-      "/purchase-bulk-building",
-      userId,
-      clientTxId,
-    );
+    const logger = createTransactionLogger('/purchase-bulk-building', userId, clientTxId);
 
     // Validation
     if (!buildingId || !quantity || !clientTxId) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
     if (quantity < 1 || quantity > 100) {
-      return res
-        .status(400)
-        .json({ error: "Invalid quantity (must be 1-100)" });
+      return res.status(400).json({ error: 'Invalid quantity (must be 1-100)' });
     }
 
     // Check for duplicate transaction (idempotency)
@@ -1017,14 +1030,14 @@ gameRouter.post("/purchase-bulk-building", async (req: AuthRequest, res) => {
     });
 
     if (!gameState) {
-      return res.status(404).json({ error: "Game state not found" });
+      return res.status(404).json({ error: 'Game state not found' });
     }
 
     const buildings = gameState.buildings as Record<string, Building>;
     const building = buildings[buildingId];
 
     if (!building) {
-      return res.status(400).json({ error: "Invalid building ID" });
+      return res.status(400).json({ error: 'Invalid building ID' });
     }
 
     // Calculate bulk cost
@@ -1071,7 +1084,7 @@ gameRouter.post("/purchase-bulk-building", async (req: AuthRequest, res) => {
       gameState.hunterLevel,
       hunterStats,
       getLastUpdateTime(gameState.lastUpdate),
-      Date.now(),
+      Date.now()
     );
 
     const currentResourceCaps = calculateResourceCaps(
@@ -1079,7 +1092,7 @@ gameRouter.post("/purchase-bulk-building", async (req: AuthRequest, res) => {
       buildings,
       research,
       gameState.hunterLevel,
-      hunterStats,
+      hunterStats
     );
 
     logger.afterPassive(currentResources, currentResourceCaps);
@@ -1088,7 +1101,7 @@ gameRouter.post("/purchase-bulk-building", async (req: AuthRequest, res) => {
     logger.validation(
       `Purchase ${quantity}x ${buildingId}`,
       cost as unknown as Partial<Record<string, number>>,
-      currentResources,
+      currentResources
     );
 
     if (!canAffordCost(currentResources, cost)) {
@@ -1101,7 +1114,7 @@ gameRouter.post("/purchase-bulk-building", async (req: AuthRequest, res) => {
       const stateDTO: GameStateDTO = transformToGameStateDTO(
         gameState,
         currentResources,
-        currentResourceCaps,
+        currentResourceCaps
       );
 
       return res.status(400).json({
@@ -1128,7 +1141,7 @@ gameRouter.post("/purchase-bulk-building", async (req: AuthRequest, res) => {
       newBuildings,
       research,
       gameState.hunterLevel,
-      hunterStats,
+      hunterStats
     );
 
     // Update database (with current timestamp for lastUpdate)
@@ -1157,7 +1170,7 @@ gameRouter.post("/purchase-bulk-building", async (req: AuthRequest, res) => {
       .where(eq(gameStates.id, gameState.id));
 
     // Invalidate cache
-    await queryClient.invalidateQueries(["gameState", userId]);
+    await queryClient.invalidateQueries(['gameState', userId]);
 
     // Fetch updated full state to return
     const updatedState = await db.query.gameStates.findFirst({
@@ -1165,14 +1178,14 @@ gameRouter.post("/purchase-bulk-building", async (req: AuthRequest, res) => {
     });
 
     if (!updatedState) {
-      return res.status(500).json({ error: "Failed to fetch updated state" });
+      return res.status(500).json({ error: 'Failed to fetch updated state' });
     }
 
     // Transform database row to GameStateDTO using helper
     const stateDTO: GameStateDTO = transformToGameStateDTO(
       updatedState,
       newResources,
-      newResourceCaps,
+      newResourceCaps
     );
 
     // Log success
@@ -1183,7 +1196,7 @@ gameRouter.post("/purchase-bulk-building", async (req: AuthRequest, res) => {
       id: crypto.randomUUID(),
       userId,
       clientTxId,
-      type: "purchase_bulk_building",
+      type: 'purchase_bulk_building',
       payload: { buildingId, cost, quantity },
       stateAfter: stateDTO,
     });
@@ -1195,8 +1208,8 @@ gameRouter.post("/purchase-bulk-building", async (req: AuthRequest, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error("Error purchasing bulk buildings:", error);
-    res.status(500).json({ error: "Failed to purchase buildings" });
+    console.error('Error purchasing bulk buildings:', error);
+    res.status(500).json({ error: 'Failed to purchase buildings' });
   }
 });
 
@@ -1204,27 +1217,18 @@ gameRouter.post("/purchase-bulk-building", async (req: AuthRequest, res) => {
  * POST /api/game/allocate-stat
  * Allocate a stat point to a hunter stat
  */
-gameRouter.post("/allocate-stat", async (req: AuthRequest, res) => {
+gameRouter.post('/allocate-stat', async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
     const { stat, clientTxId } = req.body as AllocateStatRequest;
 
     // Validation
     if (!stat || !clientTxId) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    if (
-      ![
-        "strength",
-        "agility",
-        "intelligence",
-        "vitality",
-        "sense",
-        "authority",
-      ].includes(stat)
-    ) {
-      return res.status(400).json({ error: "Invalid stat" });
+    if (!['strength', 'agility', 'intelligence', 'vitality', 'sense', 'authority'].includes(stat)) {
+      return res.status(400).json({ error: 'Invalid stat' });
     }
 
     // Check for duplicate transaction
@@ -1241,12 +1245,12 @@ gameRouter.post("/allocate-stat", async (req: AuthRequest, res) => {
     });
 
     if (!gameState) {
-      return res.status(404).json({ error: "Game state not found" });
+      return res.status(404).json({ error: 'Game state not found' });
     }
 
     // Anti-cheat: Verify player has stat points
     if (gameState.hunterStatPoints <= 0) {
-      return res.status(400).json({ error: "No stat points available" });
+      return res.status(400).json({ error: 'No stat points available' });
     }
 
     const hunter = {
@@ -1272,7 +1276,7 @@ gameRouter.post("/allocate-stat", async (req: AuthRequest, res) => {
     const newHunter = allocateStat(hunter, stat);
 
     if (!newHunter) {
-      return res.status(400).json({ error: "Failed to allocate stat" });
+      return res.status(400).json({ error: 'Failed to allocate stat' });
     }
 
     // Apply passive income (even though this mutation doesn't consume resources)
@@ -1304,7 +1308,7 @@ gameRouter.post("/allocate-stat", async (req: AuthRequest, res) => {
       gameState.hunterLevel,
       hunterStats,
       getLastUpdateTime(gameState.lastUpdate),
-      Date.now(),
+      Date.now()
     );
 
     // Update database
@@ -1334,14 +1338,14 @@ gameRouter.post("/allocate-stat", async (req: AuthRequest, res) => {
       .where(eq(gameStates.id, gameState.id));
 
     // Invalidate cache
-    await queryClient.invalidateQueries(["gameState", userId]);
+    await queryClient.invalidateQueries(['gameState', userId]);
 
     // Log transaction
     await db.insert(transactions).values({
       id: crypto.randomUUID(),
       userId,
       clientTxId,
-      type: "allocate_stat",
+      type: 'allocate_stat',
       payload: { stat },
       stateAfter: { hunter: newHunter } as unknown as GameStateDTO,
     });
@@ -1353,8 +1357,8 @@ gameRouter.post("/allocate-stat", async (req: AuthRequest, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error("Error allocating stat:", error);
-    res.status(500).json({ error: "Failed to allocate stat" });
+    console.error('Error allocating stat:', error);
+    res.status(500).json({ error: 'Failed to allocate stat' });
   }
 });
 
@@ -1362,13 +1366,13 @@ gameRouter.post("/allocate-stat", async (req: AuthRequest, res) => {
  * POST /api/game/reset
  * Reset game state to initial values
  */
-gameRouter.post("/reset", async (req: AuthRequest, res) => {
+gameRouter.post('/reset', async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
     const { clientTxId } = req.body;
 
     if (!clientTxId) {
-      return res.status(400).json({ error: "Missing clientTxId" });
+      return res.status(400).json({ error: 'Missing clientTxId' });
     }
 
     // Check for duplicate transaction
@@ -1385,7 +1389,7 @@ gameRouter.post("/reset", async (req: AuthRequest, res) => {
     });
 
     if (!gameState) {
-      return res.status(404).json({ error: "Game state not found" });
+      return res.status(404).json({ error: 'Game state not found' });
     }
 
     const now = new Date();
@@ -1412,7 +1416,7 @@ gameRouter.post("/reset", async (req: AuthRequest, res) => {
         hunterLevel: 1,
         hunterXp: 0,
         hunterXpToNextLevel: 100,
-        hunterRank: "E",
+        hunterRank: 'E',
         hunterStatPoints: 0,
         hunterHp: 100,
         hunterMaxHp: 100,
@@ -1442,14 +1446,14 @@ gameRouter.post("/reset", async (req: AuthRequest, res) => {
       .where(eq(gameStates.id, gameState.id));
 
     // Invalidate cache
-    await queryClient.invalidateQueries(["gameState", userId]);
+    await queryClient.invalidateQueries(['gameState', userId]);
 
     // Log transaction
     await db.insert(transactions).values({
       id: crypto.randomUUID(),
       userId,
       clientTxId,
-      type: "reset",
+      type: 'reset',
       payload: {},
       stateAfter: {} as unknown as GameStateDTO,
     });
@@ -1461,8 +1465,8 @@ gameRouter.post("/reset", async (req: AuthRequest, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error("Error resetting game:", error);
-    res.status(500).json({ error: "Failed to reset game" });
+    console.error('Error resetting game:', error);
+    res.status(500).json({ error: 'Failed to reset game' });
   }
 });
 
@@ -1470,20 +1474,16 @@ gameRouter.post("/reset", async (req: AuthRequest, res) => {
  * POST /api/game/purchase-research
  * Purchase a research upgrade with knowledge
  */
-gameRouter.post("/purchase-research", async (req: AuthRequest, res) => {
+gameRouter.post('/purchase-research', async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
     const { researchId, clientTxId } = req.body as PurchaseResearchRequest;
 
     // Create debug logger
-    const logger = createTransactionLogger(
-      "/purchase-research",
-      userId,
-      clientTxId,
-    );
+    const logger = createTransactionLogger('/purchase-research', userId, clientTxId);
 
     if (!researchId || !clientTxId) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
     // Check for duplicate transaction
@@ -1500,33 +1500,27 @@ gameRouter.post("/purchase-research", async (req: AuthRequest, res) => {
     });
 
     if (!gameState) {
-      return res.status(404).json({ error: "Game state not found" });
+      return res.status(404).json({ error: 'Game state not found' });
     }
 
     const research = gameState.research as Record<string, Research>;
     const researchItem = research[researchId];
 
     if (!researchItem) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Invalid research ID" });
+      return res.status(400).json({ success: false, error: 'Invalid research ID' });
     }
 
     if (researchItem.researched) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Research already purchased" });
+      return res.status(400).json({ success: false, error: 'Research already purchased' });
     }
 
     // Check prerequisites
     if (researchItem.requires) {
       const hasPrereqs = researchItem.requires.every(
-        (reqId: string) => research[reqId]?.researched,
+        (reqId: string) => research[reqId]?.researched
       );
       if (!hasPrereqs) {
-        return res
-          .status(400)
-          .json({ success: false, error: "Prerequisites not met" });
+        return res.status(400).json({ success: false, error: 'Prerequisites not met' });
       }
     }
 
@@ -1571,7 +1565,7 @@ gameRouter.post("/purchase-research", async (req: AuthRequest, res) => {
       gameState.hunterLevel,
       hunterStats,
       getLastUpdateTime(gameState.lastUpdate),
-      Date.now(),
+      Date.now()
     );
 
     const currentResourceCaps = calculateResourceCaps(
@@ -1579,7 +1573,7 @@ gameRouter.post("/purchase-research", async (req: AuthRequest, res) => {
       buildings,
       research,
       gameState.hunterLevel,
-      hunterStats,
+      hunterStats
     );
 
     logger.afterPassive(currentResources, currentResourceCaps);
@@ -1591,7 +1585,7 @@ gameRouter.post("/purchase-research", async (req: AuthRequest, res) => {
     logger.validation(
       `Purchase research ${researchId}`,
       partialCost as unknown as Partial<Record<string, number>>,
-      currentResources,
+      currentResources
     );
 
     if (currentResources.knowledge < cost) {
@@ -1604,7 +1598,7 @@ gameRouter.post("/purchase-research", async (req: AuthRequest, res) => {
       const stateDTO: GameStateDTO = transformToGameStateDTO(
         gameState,
         currentResources,
-        currentResourceCaps,
+        currentResourceCaps
       );
 
       return res.status(400).json({
@@ -1635,7 +1629,7 @@ gameRouter.post("/purchase-research", async (req: AuthRequest, res) => {
       buildings,
       newResearch,
       gameState.hunterLevel,
-      hunterStats,
+      hunterStats
     );
 
     const now = new Date();
@@ -1663,7 +1657,7 @@ gameRouter.post("/purchase-research", async (req: AuthRequest, res) => {
       .where(eq(gameStates.id, gameState.id));
 
     // Invalidate cache
-    await queryClient.invalidateQueries(["gameState", userId]);
+    await queryClient.invalidateQueries(['gameState', userId]);
 
     // Fetch updated full state to return
     const updatedState = await db.query.gameStates.findFirst({
@@ -1671,14 +1665,14 @@ gameRouter.post("/purchase-research", async (req: AuthRequest, res) => {
     });
 
     if (!updatedState) {
-      return res.status(500).json({ error: "Failed to fetch updated state" });
+      return res.status(500).json({ error: 'Failed to fetch updated state' });
     }
 
     // Transform database row to GameStateDTO using helper
     const stateDTO: GameStateDTO = transformToGameStateDTO(
       updatedState,
       newResources,
-      newResourceCaps,
+      newResourceCaps
     );
 
     // Log success
@@ -1689,7 +1683,7 @@ gameRouter.post("/purchase-research", async (req: AuthRequest, res) => {
       id: crypto.randomUUID(),
       userId,
       clientTxId,
-      type: "purchase_research",
+      type: 'purchase_research',
       payload: { researchId, cost },
       stateAfter: stateDTO,
     });
@@ -1701,8 +1695,8 @@ gameRouter.post("/purchase-research", async (req: AuthRequest, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error("Error purchasing research:", error);
-    res.status(500).json({ error: "Failed to purchase research" });
+    console.error('Error purchasing research:', error);
+    res.status(500).json({ error: 'Failed to purchase research' });
   }
 });
 
@@ -1710,13 +1704,13 @@ gameRouter.post("/purchase-research", async (req: AuthRequest, res) => {
  * POST /api/game/start-dungeon
  * Start a dungeon run with a party
  */
-gameRouter.post("/start-dungeon", async (req: AuthRequest, res) => {
+gameRouter.post('/start-dungeon', async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
     const { dungeonId, partyIds, clientTxId } = req.body as StartDungeonRequest;
 
     if (!dungeonId || !clientTxId) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
     // Check for duplicate transaction
@@ -1733,30 +1727,28 @@ gameRouter.post("/start-dungeon", async (req: AuthRequest, res) => {
     });
 
     if (!gameState) {
-      return res.status(404).json({ error: "Game state not found" });
+      return res.status(404).json({ error: 'Game state not found' });
     }
 
     const dungeons = gameState.dungeons as Dungeon[];
     const dungeon = dungeons.find((d) => d.id === dungeonId);
 
     if (!dungeon) {
-      return res.status(400).json({ error: "Invalid dungeon ID" });
+      return res.status(400).json({ error: 'Invalid dungeon ID' });
     }
 
     if (!dungeon.unlocked) {
-      return res.status(400).json({ error: "Dungeon not unlocked" });
+      return res.status(400).json({ error: 'Dungeon not unlocked' });
     }
 
     const activeDungeons = gameState.activeDungeons as ActiveDungeon[];
 
     // Check if any companions in the party are already assigned to another dungeon
     const busyCompanions = (partyIds || []).filter((companionId) =>
-      activeDungeons.some((ad) => ad.partyIds?.includes(companionId)),
+      activeDungeons.some((ad) => ad.partyIds?.includes(companionId))
     );
     if (busyCompanions.length > 0) {
-      return res
-        .status(400)
-        .json({ error: "Some companions are already in another dungeon" });
+      return res.status(400).json({ error: 'Some companions are already in another dungeon' });
     }
 
     const now = Date.now();
@@ -1801,7 +1793,7 @@ gameRouter.post("/start-dungeon", async (req: AuthRequest, res) => {
       gameState.hunterLevel,
       hunterStats,
       getLastUpdateTime(gameState.lastUpdate),
-      Date.now(),
+      Date.now()
     );
 
     const nowDate = new Date();
@@ -1822,14 +1814,14 @@ gameRouter.post("/start-dungeon", async (req: AuthRequest, res) => {
       .where(eq(gameStates.id, gameState.id));
 
     // Invalidate cache
-    await queryClient.invalidateQueries(["gameState", userId]);
+    await queryClient.invalidateQueries(['gameState', userId]);
 
     // Log transaction
     await db.insert(transactions).values({
       id: crypto.randomUUID(),
       userId,
       clientTxId,
-      type: "start_dungeon",
+      type: 'start_dungeon',
       payload: { dungeonId, partyIds },
       stateAfter: {
         resources: currentResources,
@@ -1847,8 +1839,8 @@ gameRouter.post("/start-dungeon", async (req: AuthRequest, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error("Error starting dungeon:", error);
-    res.status(500).json({ error: "Failed to start dungeon" });
+    console.error('Error starting dungeon:', error);
+    res.status(500).json({ error: 'Failed to start dungeon' });
   }
 });
 
@@ -1856,13 +1848,13 @@ gameRouter.post("/start-dungeon", async (req: AuthRequest, res) => {
  * POST /api/game/complete-dungeon
  * Complete a dungeon and claim rewards
  */
-gameRouter.post("/complete-dungeon", async (req: AuthRequest, res) => {
+gameRouter.post('/complete-dungeon', async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
     const { activeDungeonId, clientTxId } = req.body as CompleteDungeonRequest;
 
     if (!activeDungeonId || !clientTxId) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
     // Check for duplicate transaction
@@ -1879,28 +1871,26 @@ gameRouter.post("/complete-dungeon", async (req: AuthRequest, res) => {
     });
 
     if (!gameState) {
-      return res.status(404).json({ error: "Game state not found" });
+      return res.status(404).json({ error: 'Game state not found' });
     }
 
     const activeDungeons = gameState.activeDungeons as ActiveDungeon[];
-    const activeDungeon = activeDungeons.find(
-      (ad) => ad.id === activeDungeonId,
-    );
+    const activeDungeon = activeDungeons.find((ad) => ad.id === activeDungeonId);
 
     if (!activeDungeon) {
-      return res.status(400).json({ error: "Active dungeon not found" });
+      return res.status(400).json({ error: 'Active dungeon not found' });
     }
 
     const now = Date.now();
     if (now < activeDungeon.endTime) {
-      return res.status(400).json({ error: "Dungeon not complete yet" });
+      return res.status(400).json({ error: 'Dungeon not complete yet' });
     }
 
     const dungeons = gameState.dungeons as Dungeon[];
     const dungeon = dungeons.find((d) => d.id === activeDungeon.dungeonId);
 
     if (!dungeon) {
-      return res.status(400).json({ error: "Dungeon not found" });
+      return res.status(400).json({ error: 'Dungeon not found' });
     }
 
     // Apply rewards
@@ -1948,15 +1938,10 @@ gameRouter.post("/complete-dungeon", async (req: AuthRequest, res) => {
       },
     };
 
-    const { hunter: newHunter } = processXpGain(
-      hunterState,
-      rewards.experience || 0,
-    );
+    const { hunter: newHunter } = processXpGain(hunterState, rewards.experience || 0);
 
     // Remove completed dungeon from active dungeons
-    const newActiveDungeons = activeDungeons.filter(
-      (ad) => ad.id !== activeDungeonId,
-    );
+    const newActiveDungeons = activeDungeons.filter((ad) => ad.id !== activeDungeonId);
 
     await db
       .update(gameStates)
@@ -1975,14 +1960,14 @@ gameRouter.post("/complete-dungeon", async (req: AuthRequest, res) => {
       .where(eq(gameStates.id, gameState.id));
 
     // Invalidate cache
-    await queryClient.invalidateQueries(["gameState", userId]);
+    await queryClient.invalidateQueries(['gameState', userId]);
 
     // Log transaction
     await db.insert(transactions).values({
       id: crypto.randomUUID(),
       userId,
       clientTxId,
-      type: "complete_dungeon",
+      type: 'complete_dungeon',
       payload: { activeDungeonId, rewards },
       stateAfter: {
         resources: cappedResources,
@@ -2002,8 +1987,8 @@ gameRouter.post("/complete-dungeon", async (req: AuthRequest, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error("Error completing dungeon:", error);
-    res.status(500).json({ error: "Failed to complete dungeon" });
+    console.error('Error completing dungeon:', error);
+    res.status(500).json({ error: 'Failed to complete dungeon' });
   }
 });
 
@@ -2011,14 +1996,14 @@ gameRouter.post("/complete-dungeon", async (req: AuthRequest, res) => {
  * POST /api/game/cancel-dungeon
  * Cancel an active dungeon run
  */
-gameRouter.post("/cancel-dungeon", async (req: AuthRequest, res) => {
+gameRouter.post('/cancel-dungeon', async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
     const { activeDungeonId, clientTxId } =
-      req.body as import("../../shared/types.js").CancelDungeonRequest;
+      req.body as import('../../shared/types.js').CancelDungeonRequest;
 
     if (!activeDungeonId || !clientTxId) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
     // Check for duplicate transaction
@@ -2035,21 +2020,19 @@ gameRouter.post("/cancel-dungeon", async (req: AuthRequest, res) => {
     });
 
     if (!gameState) {
-      return res.status(404).json({ error: "Game state not found" });
+      return res.status(404).json({ error: 'Game state not found' });
     }
 
     const activeDungeons = gameState.activeDungeons as ActiveDungeon[];
-    const activeDungeon = activeDungeons.find(
-      (ad: ActiveDungeon) => ad.id === activeDungeonId,
-    );
+    const activeDungeon = activeDungeons.find((ad: ActiveDungeon) => ad.id === activeDungeonId);
 
     if (!activeDungeon) {
-      return res.status(400).json({ error: "Active dungeon not found" });
+      return res.status(400).json({ error: 'Active dungeon not found' });
     }
 
     // Remove the active dungeon
     const newActiveDungeons = activeDungeons.filter(
-      (ad: ActiveDungeon) => ad.id !== activeDungeonId,
+      (ad: ActiveDungeon) => ad.id !== activeDungeonId
     );
 
     // Apply passive income
@@ -2081,7 +2064,7 @@ gameRouter.post("/cancel-dungeon", async (req: AuthRequest, res) => {
       gameState.hunterLevel,
       hunterStats,
       getLastUpdateTime(gameState.lastUpdate),
-      Date.now(),
+      Date.now()
     );
 
     // Save to database
@@ -2103,14 +2086,14 @@ gameRouter.post("/cancel-dungeon", async (req: AuthRequest, res) => {
       .where(eq(gameStates.id, gameState.id));
 
     // Invalidate cache
-    await queryClient.invalidateQueries(["gameState", userId]);
+    await queryClient.invalidateQueries(['gameState', userId]);
 
     // Log transaction
     await db.insert(transactions).values({
       id: crypto.randomUUID(),
       userId,
       clientTxId,
-      type: "cancel_dungeon",
+      type: 'cancel_dungeon',
       payload: { activeDungeonId },
       stateAfter: {
         resources: currentResources,
@@ -2118,7 +2101,7 @@ gameRouter.post("/cancel-dungeon", async (req: AuthRequest, res) => {
       } as unknown as GameStateDTO,
     });
 
-    const response: import("../../shared/types.js").TransactionResponse = {
+    const response: import('../../shared/types.js').TransactionResponse = {
       success: true,
       state: {
         resources: currentResources,
@@ -2128,8 +2111,8 @@ gameRouter.post("/cancel-dungeon", async (req: AuthRequest, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error("Error canceling dungeon:", error);
-    res.status(500).json({ error: "Failed to cancel dungeon" });
+    console.error('Error canceling dungeon:', error);
+    res.status(500).json({ error: 'Failed to cancel dungeon' });
   }
 });
 
@@ -2137,17 +2120,17 @@ gameRouter.post("/cancel-dungeon", async (req: AuthRequest, res) => {
  * POST /api/game/recruit-ally
  * Recruit a new ally with attraction
  */
-gameRouter.post("/recruit-ally", async (req: AuthRequest, res) => {
+gameRouter.post('/recruit-ally', async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
     const { name, rank, clientTxId } =
-      req.body as import("../../shared/types.js").RecruitAllyRequest;
+      req.body as import('../../shared/types.js').RecruitAllyRequest;
 
     // Create debug logger
-    const logger = createTransactionLogger("/recruit-ally", userId, clientTxId);
+    const logger = createTransactionLogger('/recruit-ally', userId, clientTxId);
 
     if (!name || !rank || !clientTxId) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
     // Check for duplicate transaction
@@ -2164,7 +2147,7 @@ gameRouter.post("/recruit-ally", async (req: AuthRequest, res) => {
     });
 
     if (!gameState) {
-      return res.status(404).json({ error: "Game state not found" });
+      return res.status(404).json({ error: 'Game state not found' });
     }
 
     // Calculate cost based on rank
@@ -2221,7 +2204,7 @@ gameRouter.post("/recruit-ally", async (req: AuthRequest, res) => {
       gameState.hunterLevel,
       hunterStats,
       getLastUpdateTime(gameState.lastUpdate),
-      Date.now(),
+      Date.now()
     );
 
     const currentResourceCaps = calculateResourceCaps(
@@ -2229,7 +2212,7 @@ gameRouter.post("/recruit-ally", async (req: AuthRequest, res) => {
       buildings,
       research,
       gameState.hunterLevel,
-      hunterStats,
+      hunterStats
     );
 
     logger.afterPassive(currentResources, currentResourceCaps);
@@ -2238,7 +2221,7 @@ gameRouter.post("/recruit-ally", async (req: AuthRequest, res) => {
     logger.validation(
       `Recruit ${rank}-rank ally ${name}`,
       partialCost as unknown as Partial<Record<string, number>>,
-      currentResources,
+      currentResources
     );
 
     if (currentResources.attraction < cost) {
@@ -2251,7 +2234,7 @@ gameRouter.post("/recruit-ally", async (req: AuthRequest, res) => {
       const stateDTO: GameStateDTO = transformToGameStateDTO(
         gameState,
         currentResources,
-        currentResourceCaps,
+        currentResourceCaps
       );
 
       return res.status(400).json({
@@ -2262,12 +2245,12 @@ gameRouter.post("/recruit-ally", async (req: AuthRequest, res) => {
       });
     }
 
-    const allies = gameState.allies as import("../../shared/types.js").Ally[];
-    const newAlly: import("../../shared/types.js").Ally = {
+    const allies = gameState.allies as import('../../shared/types.js').Ally[];
+    const newAlly: import('../../shared/types.js').Ally = {
       id: `ally-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name,
-      type: "ally",
-      originDungeonId: "recruitment", // Recruited allies don't come from dungeons
+      type: 'ally',
+      originDungeonId: 'recruitment', // Recruited allies don't come from dungeons
       level: 1,
       xp: 0,
       xpToNextLevel: 100,
@@ -2304,7 +2287,7 @@ gameRouter.post("/recruit-ally", async (req: AuthRequest, res) => {
       .where(eq(gameStates.id, gameState.id));
 
     // Invalidate cache
-    await queryClient.invalidateQueries(["gameState", userId]);
+    await queryClient.invalidateQueries(['gameState', userId]);
 
     // Fetch updated full state to return
     const updatedState = await db.query.gameStates.findFirst({
@@ -2312,14 +2295,14 @@ gameRouter.post("/recruit-ally", async (req: AuthRequest, res) => {
     });
 
     if (!updatedState) {
-      return res.status(500).json({ error: "Failed to fetch updated state" });
+      return res.status(500).json({ error: 'Failed to fetch updated state' });
     }
 
     // Transform database row to GameStateDTO using helper
     const stateDTO: GameStateDTO = transformToGameStateDTO(
       updatedState,
       newResources,
-      currentResourceCaps,
+      currentResourceCaps
     );
 
     // Log success
@@ -2330,7 +2313,7 @@ gameRouter.post("/recruit-ally", async (req: AuthRequest, res) => {
       id: crypto.randomUUID(),
       userId,
       clientTxId,
-      type: "recruit_ally",
+      type: 'recruit_ally',
       payload: { name, rank, cost },
       stateAfter: stateDTO,
     });
@@ -2342,8 +2325,8 @@ gameRouter.post("/recruit-ally", async (req: AuthRequest, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error("Error recruiting ally:", error);
-    res.status(500).json({ error: "Failed to recruit ally" });
+    console.error('Error recruiting ally:', error);
+    res.status(500).json({ error: 'Failed to recruit ally' });
   }
 });
 
@@ -2351,21 +2334,17 @@ gameRouter.post("/recruit-ally", async (req: AuthRequest, res) => {
  * POST /api/game/extract-shadow
  * Extract a shadow from a defeated enemy
  */
-gameRouter.post("/extract-shadow", async (req: AuthRequest, res) => {
+gameRouter.post('/extract-shadow', async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
     const { name, dungeonId, clientTxId } =
-      req.body as import("../../shared/types.js").ExtractShadowRequest;
+      req.body as import('../../shared/types.js').ExtractShadowRequest;
 
     // Create debug logger
-    const logger = createTransactionLogger(
-      "/extract-shadow",
-      userId,
-      clientTxId,
-    );
+    const logger = createTransactionLogger('/extract-shadow', userId, clientTxId);
 
     if (!name || !dungeonId || !clientTxId) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
     // Check for duplicate transaction
@@ -2382,16 +2361,14 @@ gameRouter.post("/extract-shadow", async (req: AuthRequest, res) => {
     });
 
     if (!gameState) {
-      return res.status(404).json({ error: "Game state not found" });
+      return res.status(404).json({ error: 'Game state not found' });
     }
 
     const dungeons = gameState.dungeons as Dungeon[];
     const dungeon = dungeons.find((d) => d.id === dungeonId);
 
     if (!dungeon) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Invalid dungeon ID" });
+      return res.status(400).json({ success: false, error: 'Invalid dungeon ID' });
     }
 
     // Cost is based on dungeon rank
@@ -2439,7 +2416,7 @@ gameRouter.post("/extract-shadow", async (req: AuthRequest, res) => {
       gameState.hunterLevel,
       hunterStats,
       getLastUpdateTime(gameState.lastUpdate),
-      Date.now(),
+      Date.now()
     );
 
     const currentResourceCaps = calculateResourceCaps(
@@ -2447,7 +2424,7 @@ gameRouter.post("/extract-shadow", async (req: AuthRequest, res) => {
       buildings,
       research,
       gameState.hunterLevel,
-      hunterStats,
+      hunterStats
     );
 
     logger.afterPassive(currentResources, currentResourceCaps);
@@ -2456,7 +2433,7 @@ gameRouter.post("/extract-shadow", async (req: AuthRequest, res) => {
     logger.validation(
       `Extract shadow ${name} from ${dungeonId}`,
       partialCost as unknown as Partial<Record<string, number>>,
-      currentResources,
+      currentResources
     );
 
     if (currentResources.souls < cost) {
@@ -2469,7 +2446,7 @@ gameRouter.post("/extract-shadow", async (req: AuthRequest, res) => {
       const stateDTO: GameStateDTO = transformToGameStateDTO(
         gameState,
         currentResources,
-        currentResourceCaps,
+        currentResourceCaps
       );
 
       return res.status(400).json({
@@ -2480,12 +2457,11 @@ gameRouter.post("/extract-shadow", async (req: AuthRequest, res) => {
       });
     }
 
-    const shadows =
-      gameState.shadows as import("../../shared/types.js").Shadow[];
-    const newShadow: import("../../shared/types.js").Shadow = {
+    const shadows = gameState.shadows as import('../../shared/types.js').Shadow[];
+    const newShadow: import('../../shared/types.js').Shadow = {
       id: `shadow-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name,
-      type: "shadow",
+      type: 'shadow',
       originDungeonId: dungeonId,
       level: 1,
       xp: 0,
@@ -2523,7 +2499,7 @@ gameRouter.post("/extract-shadow", async (req: AuthRequest, res) => {
       .where(eq(gameStates.id, gameState.id));
 
     // Invalidate cache
-    await queryClient.invalidateQueries(["gameState", userId]);
+    await queryClient.invalidateQueries(['gameState', userId]);
 
     // Fetch updated full state to return
     const updatedState = await db.query.gameStates.findFirst({
@@ -2531,14 +2507,14 @@ gameRouter.post("/extract-shadow", async (req: AuthRequest, res) => {
     });
 
     if (!updatedState) {
-      return res.status(500).json({ error: "Failed to fetch updated state" });
+      return res.status(500).json({ error: 'Failed to fetch updated state' });
     }
 
     // Transform database row to GameStateDTO using helper
     const stateDTO: GameStateDTO = transformToGameStateDTO(
       updatedState,
       newResources,
-      currentResourceCaps,
+      currentResourceCaps
     );
 
     // Log success
@@ -2549,7 +2525,7 @@ gameRouter.post("/extract-shadow", async (req: AuthRequest, res) => {
       id: crypto.randomUUID(),
       userId,
       clientTxId,
-      type: "extract_shadow",
+      type: 'extract_shadow',
       payload: { name, dungeonId, cost },
       stateAfter: stateDTO,
     });
@@ -2561,8 +2537,8 @@ gameRouter.post("/extract-shadow", async (req: AuthRequest, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error("Error extracting shadow:", error);
-    res.status(500).json({ error: "Failed to extract shadow" });
+    console.error('Error extracting shadow:', error);
+    res.status(500).json({ error: 'Failed to extract shadow' });
   }
 });
 

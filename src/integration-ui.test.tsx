@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import {
   gameStore,
   initializeGame,
@@ -7,13 +7,13 @@ import {
   useHunterStore,
   useResearchStore,
   useArtifactsStore,
-} from "./store/gameStore";
-import * as gameApi from "./api/gameApi";
-import type { GameStateResponse } from "../shared/types";
-import { initialBuildings } from "./data/initialBuildings";
-import { GatheringActions } from "./components/GatheringActions";
-import { BuildingList } from "./components/BuildingList";
-import { HunterDisplay } from "./components/HunterDisplay";
+} from './store/gameStore';
+import * as gameApi from './api/gameApi';
+import type { GameStateResponse } from '../shared/types';
+import { initialBuildings } from './data/initialBuildings';
+import { GatheringActions } from './components/GatheringActions';
+import { BuildingList } from './components/BuildingList';
+import { HunterDisplay } from './components/HunterDisplay';
 
 /**
  * Comprehensive Frontend Integration Tests - UI & Edge Cases
@@ -29,7 +29,7 @@ import { HunterDisplay } from "./components/HunterDisplay";
  */
 
 // Mock the API module
-vi.mock("./api/gameApi");
+vi.mock('./api/gameApi');
 
 // Helper to create mock game state
 function createMockGameState(): GameStateResponse {
@@ -88,7 +88,7 @@ function createMockGameState(): GameStateResponse {
   };
 }
 
-describe("Frontend Integration Tests - UI & Edge Cases", () => {
+describe('Frontend Integration Tests - UI & Edge Cases', () => {
   beforeEach(() => {
     // Reset all stores
     localStorage.clear();
@@ -118,8 +118,8 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
     vi.clearAllMocks();
   });
 
-  describe("1. Resource Gathering - UI Integration", () => {
-    it("1.1 should render gathering buttons and respond to clicks", async () => {
+  describe('1. Resource Gathering - UI Integration', () => {
+    it('1.1 should render gathering buttons and respond to clicks', async () => {
       initializeGame();
       render(<GatheringActions />);
 
@@ -153,17 +153,17 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
       fireEvent.click(gatherButton);
 
       // Wait for async operation
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify API was called
-      expect(gameApi.gatherResource).toHaveBeenCalledWith("essence");
+      expect(gameApi.gatherResource).toHaveBeenCalledWith('essence');
 
       // Verify state updated (optimistic update)
       const essenceAfter = gameStore.getState().resources.essence;
       expect(essenceAfter).toBeGreaterThan(essenceBefore);
     });
 
-    it("1.2 should handle rapid clicking without duplicates", async () => {
+    it('1.2 should handle rapid clicking without duplicates', async () => {
       initializeGame();
       render(<GatheringActions />);
 
@@ -193,7 +193,7 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
       fireEvent.click(gatherButton);
 
       // Wait for all async operations
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Verify all API calls were made
       expect(gameApi.gatherResource).toHaveBeenCalledTimes(5);
@@ -202,14 +202,14 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
       expect(gameStore.getState().pendingMutations).toBe(0);
     });
 
-    it("1.3 should handle API failure and rollback", async () => {
+    it('1.3 should handle API failure and rollback', async () => {
       initializeGame();
       render(<GatheringActions />);
 
       const gatherButton = screen.getByText(/Gather Essence/i);
 
       // Mock API failure
-      vi.mocked(gameApi.gatherResource).mockRejectedValue(new Error("Network error"));
+      vi.mocked(gameApi.gatherResource).mockRejectedValue(new Error('Network error'));
 
       const essenceBefore = gameStore.getState().resources.essence;
       const xpBefore = useHunterStore.getState().hunter.xp;
@@ -218,7 +218,7 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
       fireEvent.click(gatherButton);
 
       // Wait for async operation
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify state was rolled back (optimistic update then rollback)
       const essenceAfter = gameStore.getState().resources.essence;
@@ -233,8 +233,8 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
     });
   });
 
-  describe("2. Building Purchase - UI Integration & Edge Cases", () => {
-    it("2.1 should disable purchase button when insufficient resources", () => {
+  describe('2. Building Purchase - UI Integration & Edge Cases', () => {
+    it('2.1 should disable purchase button when insufficient resources', () => {
       initializeGame();
 
       // Set resources to 0
@@ -260,7 +260,7 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
       expect(buildButtons.length).toBeGreaterThan(0);
     });
 
-    it("2.2 should enable purchase button when sufficient resources", () => {
+    it('2.2 should enable purchase button when sufficient resources', () => {
       initializeGame();
 
       // Set resources to sufficient amount
@@ -285,7 +285,7 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
       expect(buildButtons.length).toBeGreaterThan(0);
     });
 
-    it("2.3 should handle building purchase with insufficient resources (validation)", async () => {
+    it('2.3 should handle building purchase with insufficient resources (validation)', async () => {
       initializeGame();
 
       // Set resources to insufficient amount
@@ -304,11 +304,11 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
       const buildingsBefore = useBuildingsStore.getState().buildings.essenceExtractor.count;
 
       // Try to purchase (should fail validation)
-      const { purchaseBuilding } = await import("./store/gameStore");
-      purchaseBuilding("essenceExtractor");
+      const { purchaseBuilding } = await import('./store/gameStore');
+      purchaseBuilding('essenceExtractor');
 
       // Wait a bit
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Verify purchase did not happen
       const buildingsAfter = useBuildingsStore.getState().buildings.essenceExtractor.count;
@@ -318,7 +318,7 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
       expect(gameApi.purchaseBuilding).not.toHaveBeenCalled();
     });
 
-    it("2.4 should successfully purchase building with UI button click", async () => {
+    it('2.4 should successfully purchase building with UI button click', async () => {
       initializeGame();
 
       // Set resources to sufficient amount
@@ -360,29 +360,29 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
       // Find build buttons (filter out the heading which also contains "Build")
       const allBuildElements = screen.getAllByText(/Build/i);
       // Find the actual "Build" button (not "Buildings" heading)
-      const buildButton = allBuildElements.find(el => el.textContent === "Build");
+      const buildButton = allBuildElements.find((el) => el.textContent === 'Build');
       expect(buildButton).toBeDefined();
 
       fireEvent.click(buildButton!);
 
       // Optimistic update should happen immediately
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Verify building count increased (optimistic update)
       const buildingsAfter = useBuildingsStore.getState().buildings.essenceExtractor.count;
       expect(buildingsAfter).toBeGreaterThan(buildingsBefore);
 
       // Wait for API call to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify API was called
-      expect(gameApi.purchaseBuilding).toHaveBeenCalledWith("essenceExtractor");
+      expect(gameApi.purchaseBuilding).toHaveBeenCalledWith('essenceExtractor');
 
       // Verify pending mutations cleared
       expect(gameStore.getState().pendingMutations).toBe(0);
     });
 
-    it("2.5 should handle rapid purchase clicks (race condition)", async () => {
+    it('2.5 should handle rapid purchase clicks (race condition)', async () => {
       initializeGame();
 
       // Set resources to sufficient amount
@@ -426,7 +426,7 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
         fireEvent.click(buildButtons[0]);
 
         // Wait for all async operations
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
 
         // Verify pending mutations cleared
         expect(gameStore.getState().pendingMutations).toBe(0);
@@ -434,8 +434,8 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
     });
   });
 
-  describe("3. Hunter Stat Allocation - UI Integration & Edge Cases", () => {
-    it("3.1 should disable stat allocation buttons when no stat points", () => {
+  describe('3. Hunter Stat Allocation - UI Integration & Edge Cases', () => {
+    it('3.1 should disable stat allocation buttons when no stat points', () => {
       initializeGame();
 
       // Set hunter with 0 stat points
@@ -449,15 +449,15 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
       render(<HunterDisplay />);
 
       // Find stat allocation buttons (+ buttons)
-      const plusButtons = screen.getAllByText("+");
+      const plusButtons = screen.getAllByText('+');
 
       // All buttons should be disabled
-      plusButtons.forEach(button => {
+      plusButtons.forEach((button) => {
         expect(button).toBeDisabled();
       });
     });
 
-    it("3.2 should enable stat allocation buttons when stat points available", () => {
+    it('3.2 should enable stat allocation buttons when stat points available', () => {
       initializeGame();
 
       // Set hunter with stat points
@@ -471,15 +471,15 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
       render(<HunterDisplay />);
 
       // Find stat allocation buttons (+ buttons)
-      const plusButtons = screen.getAllByText("+");
+      const plusButtons = screen.getAllByText('+');
 
       // All buttons should be enabled
-      plusButtons.forEach(button => {
+      plusButtons.forEach((button) => {
         expect(button).not.toBeDisabled();
       });
     });
 
-    it("3.3 should successfully allocate stat with button click", async () => {
+    it('3.3 should successfully allocate stat with button click', async () => {
       initializeGame();
 
       // Set hunter with stat points
@@ -523,12 +523,12 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
       const statPointsBefore = useHunterStore.getState().hunter.statPoints;
 
       // Find and click first + button (should be strength)
-      const plusButtons = screen.getAllByText("+");
+      const plusButtons = screen.getAllByText('+');
       if (plusButtons.length > 0) {
         fireEvent.click(plusButtons[0]);
 
         // Wait for async operation
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         // Verify stat points decreased
         const statPointsAfter = useHunterStore.getState().hunter.statPoints;
@@ -536,7 +536,7 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
       }
     });
 
-    it("3.4 should handle stat allocation failure (no points) with rollback", async () => {
+    it('3.4 should handle stat allocation failure (no points) with rollback', async () => {
       initializeGame();
 
       // Set hunter with 0 stat points
@@ -551,11 +551,11 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
       const strengthBefore = useHunterStore.getState().hunter.stats.strength;
 
       // Try to allocate (should fail validation)
-      const { allocateStat } = await import("./store/gameStore");
-      allocateStat("strength");
+      const { allocateStat } = await import('./store/gameStore');
+      allocateStat('strength');
 
       // Wait a bit
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Verify nothing changed
       const statPointsAfter = useHunterStore.getState().hunter.statPoints;
@@ -569,4 +569,3 @@ describe("Frontend Integration Tests - UI & Edge Cases", () => {
     });
   });
 });
-

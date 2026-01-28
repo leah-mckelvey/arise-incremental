@@ -16,10 +16,10 @@ import type {
   RecruitAllyRequest,
   ExtractShadowRequest,
   ResetGameRequest,
-} from "../../shared/types";
-import { logFrontendTransaction } from "../lib/debugLogger";
+} from '../../shared/types';
+import { logFrontendTransaction } from '../lib/debugLogger';
 
-let API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
+let API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 let TEST_USER_ID: string | null = null;
 
 /**
@@ -48,10 +48,10 @@ export function setTestUserId(userId: string | null): void {
  */
 function getHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   };
   if (TEST_USER_ID) {
-    headers["x-test-user-id"] = TEST_USER_ID;
+    headers['x-test-user-id'] = TEST_USER_ID;
   }
   return headers;
 }
@@ -67,16 +67,15 @@ export function generateClientTxId(): string {
  * Helper to extract resource state for logging
  */
 function extractResourceState(state: unknown) {
-  if (!state || typeof state !== "object") return undefined;
+  if (!state || typeof state !== 'object') return undefined;
   const stateObj = state as Record<string, unknown>;
-  if (!stateObj.resources || typeof stateObj.resources !== "object")
-    return undefined;
+  if (!stateObj.resources || typeof stateObj.resources !== 'object') return undefined;
   const resources = stateObj.resources as Record<string, unknown>;
   return {
-    essence: typeof resources.essence === "number" ? resources.essence : 0,
-    crystals: typeof resources.crystals === "number" ? resources.crystals : 0,
-    gold: typeof resources.gold === "number" ? resources.gold : 0,
-    souls: typeof resources.souls === "number" ? resources.souls : 0,
+    essence: typeof resources.essence === 'number' ? resources.essence : 0,
+    crystals: typeof resources.crystals === 'number' ? resources.crystals : 0,
+    gold: typeof resources.gold === 'number' ? resources.gold : 0,
+    souls: typeof resources.souls === 'number' ? resources.souls : 0,
   };
 }
 
@@ -88,7 +87,7 @@ async function handleApiResponse(
   response: Response,
   endpoint: string,
   clientTxId: string,
-  action: string,
+  action: string
 ): Promise<TransactionResponse> {
   const responseBody = await response.json();
 
@@ -97,7 +96,7 @@ async function handleApiResponse(
     const errorMessage = responseBody.error || response.statusText;
     logFrontendTransaction({
       timestamp: Date.now(),
-      phase: "ERROR",
+      phase: 'ERROR',
       endpoint,
       clientTxId,
       action,
@@ -113,7 +112,7 @@ async function handleApiResponse(
   // Log successful response
   logFrontendTransaction({
     timestamp: Date.now(),
-    phase: "API_RESPONSE",
+    phase: 'API_RESPONSE',
     endpoint,
     clientTxId,
     action,
@@ -131,7 +130,7 @@ async function handleApiResponse(
 export async function getGameState(): Promise<GameStateResponse> {
   const headers: Record<string, string> = {};
   if (TEST_USER_ID) {
-    headers["x-test-user-id"] = TEST_USER_ID;
+    headers['x-test-user-id'] = TEST_USER_ID;
   }
   const response = await fetch(`${API_BASE}/api/game/state`, { headers });
   if (!response.ok) {
@@ -145,10 +144,10 @@ export async function getGameState(): Promise<GameStateResponse> {
  * Manually gather a resource (1 at a time for anti-cheat)
  */
 export async function gatherResource(
-  resource: "essence" | "crystals" | "gold",
+  resource: 'essence' | 'crystals' | 'gold'
 ): Promise<TransactionResponse> {
   const clientTxId = generateClientTxId();
-  const endpoint = "/api/game/gather-resource";
+  const endpoint = '/api/game/gather-resource';
   const action = `Gather ${resource}`;
 
   const request: GatherResourceRequest = {
@@ -159,7 +158,7 @@ export async function gatherResource(
   // Log API request
   logFrontendTransaction({
     timestamp: Date.now(),
-    phase: "API_REQUEST",
+    phase: 'API_REQUEST',
     endpoint,
     clientTxId,
     action,
@@ -167,7 +166,7 @@ export async function gatherResource(
   });
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
-    method: "POST",
+    method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(request),
   });
@@ -179,11 +178,9 @@ export async function gatherResource(
  * POST /api/game/purchase-building
  * Purchase a single building
  */
-export async function purchaseBuilding(
-  buildingId: string,
-): Promise<TransactionResponse> {
+export async function purchaseBuilding(buildingId: string): Promise<TransactionResponse> {
   const clientTxId = generateClientTxId();
-  const endpoint = "/api/game/purchase-building";
+  const endpoint = '/api/game/purchase-building';
   const action = `Purchase building ${buildingId}`;
 
   const request: PurchaseBuildingRequest = {
@@ -194,7 +191,7 @@ export async function purchaseBuilding(
   // Log API request
   logFrontendTransaction({
     timestamp: Date.now(),
-    phase: "API_REQUEST",
+    phase: 'API_REQUEST',
     endpoint,
     clientTxId,
     action,
@@ -202,7 +199,7 @@ export async function purchaseBuilding(
   });
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
-    method: "POST",
+    method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(request),
   });
@@ -216,10 +213,10 @@ export async function purchaseBuilding(
  */
 export async function purchaseBulkBuilding(
   buildingId: string,
-  quantity: number,
+  quantity: number
 ): Promise<TransactionResponse> {
   const clientTxId = generateClientTxId();
-  const endpoint = "/api/game/purchase-bulk-building";
+  const endpoint = '/api/game/purchase-bulk-building';
   const action = `Purchase ${quantity}x ${buildingId}`;
 
   const request: PurchaseBulkBuildingRequest = {
@@ -231,7 +228,7 @@ export async function purchaseBulkBuilding(
   // Log API request
   logFrontendTransaction({
     timestamp: Date.now(),
-    phase: "API_REQUEST",
+    phase: 'API_REQUEST',
     endpoint,
     clientTxId,
     action,
@@ -239,7 +236,7 @@ export async function purchaseBulkBuilding(
   });
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
-    method: "POST",
+    method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(request),
   });
@@ -252,13 +249,7 @@ export async function purchaseBulkBuilding(
  * Allocate a hunter stat point
  */
 export async function allocateStat(
-  stat:
-    | "strength"
-    | "agility"
-    | "intelligence"
-    | "vitality"
-    | "sense"
-    | "authority",
+  stat: 'strength' | 'agility' | 'intelligence' | 'vitality' | 'sense' | 'authority'
 ): Promise<TransactionResponse> {
   const request: AllocateStatRequest = {
     stat,
@@ -266,7 +257,7 @@ export async function allocateStat(
   };
 
   const response = await fetch(`${API_BASE}/api/game/allocate-stat`, {
-    method: "POST",
+    method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(request),
   });
@@ -281,11 +272,9 @@ export async function allocateStat(
  * POST /api/game/purchase-research
  * Purchase a research upgrade
  */
-export async function purchaseResearch(
-  researchId: string,
-): Promise<TransactionResponse> {
+export async function purchaseResearch(researchId: string): Promise<TransactionResponse> {
   const clientTxId = generateClientTxId();
-  const endpoint = "/api/game/purchase-research";
+  const endpoint = '/api/game/purchase-research';
   const action = `Purchase research ${researchId}`;
 
   const request: PurchaseResearchRequest = {
@@ -296,7 +285,7 @@ export async function purchaseResearch(
   // Log API request
   logFrontendTransaction({
     timestamp: Date.now(),
-    phase: "API_REQUEST",
+    phase: 'API_REQUEST',
     endpoint,
     clientTxId,
     action,
@@ -304,7 +293,7 @@ export async function purchaseResearch(
   });
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
-    method: "POST",
+    method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(request),
   });
@@ -318,7 +307,7 @@ export async function purchaseResearch(
  */
 export async function startDungeon(
   dungeonId: string,
-  partyIds: string[],
+  partyIds: string[]
 ): Promise<TransactionResponse> {
   const request: StartDungeonRequest = {
     dungeonId,
@@ -327,7 +316,7 @@ export async function startDungeon(
   };
 
   const response = await fetch(`${API_BASE}/api/game/start-dungeon`, {
-    method: "POST",
+    method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(request),
   });
@@ -342,16 +331,14 @@ export async function startDungeon(
  * POST /api/game/complete-dungeon
  * Complete a dungeon and claim rewards
  */
-export async function completeDungeon(
-  activeDungeonId: string,
-): Promise<TransactionResponse> {
+export async function completeDungeon(activeDungeonId: string): Promise<TransactionResponse> {
   const request: CompleteDungeonRequest = {
     activeDungeonId,
     clientTxId: generateClientTxId(),
   };
 
   const response = await fetch(`${API_BASE}/api/game/complete-dungeon`, {
-    method: "POST",
+    method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(request),
   });
@@ -366,16 +353,14 @@ export async function completeDungeon(
  * POST /api/game/cancel-dungeon
  * Cancel an active dungeon run
  */
-export async function cancelDungeon(
-  activeDungeonId: string,
-): Promise<TransactionResponse> {
+export async function cancelDungeon(activeDungeonId: string): Promise<TransactionResponse> {
   const request: CancelDungeonRequest = {
     activeDungeonId,
     clientTxId: generateClientTxId(),
   };
 
   const response = await fetch(`${API_BASE}/api/game/cancel-dungeon`, {
-    method: "POST",
+    method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(request),
   });
@@ -390,12 +375,9 @@ export async function cancelDungeon(
  * POST /api/game/recruit-ally
  * Recruit a new ally with attraction
  */
-export async function recruitAlly(
-  name: string,
-  rank: string,
-): Promise<TransactionResponse> {
+export async function recruitAlly(name: string, rank: string): Promise<TransactionResponse> {
   const clientTxId = generateClientTxId();
-  const endpoint = "/api/game/recruit-ally";
+  const endpoint = '/api/game/recruit-ally';
   const action = `Recruit ${rank}-rank ally ${name}`;
 
   const request: RecruitAllyRequest = {
@@ -407,7 +389,7 @@ export async function recruitAlly(
   // Log API request
   logFrontendTransaction({
     timestamp: Date.now(),
-    phase: "API_REQUEST",
+    phase: 'API_REQUEST',
     endpoint,
     clientTxId,
     action,
@@ -415,7 +397,7 @@ export async function recruitAlly(
   });
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
-    method: "POST",
+    method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(request),
   });
@@ -427,12 +409,9 @@ export async function recruitAlly(
  * POST /api/game/extract-shadow
  * Extract a shadow from a defeated enemy
  */
-export async function extractShadow(
-  name: string,
-  dungeonId: string,
-): Promise<TransactionResponse> {
+export async function extractShadow(name: string, dungeonId: string): Promise<TransactionResponse> {
   const clientTxId = generateClientTxId();
-  const endpoint = "/api/game/extract-shadow";
+  const endpoint = '/api/game/extract-shadow';
   const action = `Extract shadow ${name} from ${dungeonId}`;
 
   const request: ExtractShadowRequest = {
@@ -444,7 +423,7 @@ export async function extractShadow(
   // Log API request
   logFrontendTransaction({
     timestamp: Date.now(),
-    phase: "API_REQUEST",
+    phase: 'API_REQUEST',
     endpoint,
     clientTxId,
     action,
@@ -452,7 +431,7 @@ export async function extractShadow(
   });
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
-    method: "POST",
+    method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(request),
   });
@@ -470,7 +449,7 @@ export async function resetGame(): Promise<TransactionResponse> {
   };
 
   const response = await fetch(`${API_BASE}/api/game/reset`, {
-    method: "POST",
+    method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(request),
   });

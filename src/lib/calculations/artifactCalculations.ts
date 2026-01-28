@@ -4,7 +4,7 @@ import type {
   ArtifactStatBonus,
   Resources,
   HunterStats,
-  EquippedArtifacts
+  EquippedArtifacts,
 } from '../../store/types';
 
 /**
@@ -21,7 +21,7 @@ export const calculateCraftCost = (rank: ArtifactRank, slot: ArtifactSlot): Reso
   };
 
   const slotMultipliers: Record<ArtifactSlot, number> = {
-    weapon: 2.0,    // Weapons are most expensive
+    weapon: 2.0, // Weapons are most expensive
     chest: 1.5,
     head: 1.2,
     legs: 1.2,
@@ -52,12 +52,12 @@ export const calculateCraftCost = (rank: ArtifactRank, slot: ArtifactSlot): Reso
  */
 export const calculateBaseStats = (rank: ArtifactRank, slot: ArtifactSlot): ArtifactStatBonus => {
   const rankBonuses: Record<ArtifactRank, number> = {
-    E: 2,    // +2% per stat
-    D: 5,    // +5% per stat
-    C: 10,   // +10% per stat
-    B: 20,   // +20% per stat
-    A: 35,   // +35% per stat
-    S: 60,   // +60% per stat
+    E: 2, // +2% per stat
+    D: 5, // +5% per stat
+    C: 10, // +10% per stat
+    B: 20, // +20% per stat
+    A: 35, // +35% per stat
+    S: 60, // +60% per stat
   };
 
   const baseBonus = rankBonuses[rank];
@@ -83,7 +83,9 @@ export const calculateBaseStats = (rank: ArtifactRank, slot: ArtifactSlot): Arti
 /**
  * Calculate total stat bonuses from all equipped artifacts
  */
-export const calculateEquippedStatBonuses = (equipped: EquippedArtifacts | null | undefined): ArtifactStatBonus => {
+export const calculateEquippedStatBonuses = (
+  equipped: EquippedArtifacts | null | undefined
+): ArtifactStatBonus => {
   const totalBonus: ArtifactStatBonus = {
     strength: 0,
     agility: 0,
@@ -101,7 +103,8 @@ export const calculateEquippedStatBonuses = (equipped: EquippedArtifacts | null 
       // Add base stats
       if (artifact.baseStats.strength) totalBonus.strength! += artifact.baseStats.strength;
       if (artifact.baseStats.agility) totalBonus.agility! += artifact.baseStats.agility;
-      if (artifact.baseStats.intelligence) totalBonus.intelligence! += artifact.baseStats.intelligence;
+      if (artifact.baseStats.intelligence)
+        totalBonus.intelligence! += artifact.baseStats.intelligence;
       if (artifact.baseStats.vitality) totalBonus.vitality! += artifact.baseStats.vitality;
       if (artifact.baseStats.sense) totalBonus.sense! += artifact.baseStats.sense;
 
@@ -109,7 +112,8 @@ export const calculateEquippedStatBonuses = (equipped: EquippedArtifacts | null 
       artifact.upgrades.forEach((upgrade) => {
         if (upgrade.statBonus.strength) totalBonus.strength! += upgrade.statBonus.strength;
         if (upgrade.statBonus.agility) totalBonus.agility! += upgrade.statBonus.agility;
-        if (upgrade.statBonus.intelligence) totalBonus.intelligence! += upgrade.statBonus.intelligence;
+        if (upgrade.statBonus.intelligence)
+          totalBonus.intelligence! += upgrade.statBonus.intelligence;
         if (upgrade.statBonus.vitality) totalBonus.vitality! += upgrade.statBonus.vitality;
         if (upgrade.statBonus.sense) totalBonus.sense! += upgrade.statBonus.sense;
       });
@@ -122,11 +126,16 @@ export const calculateEquippedStatBonuses = (equipped: EquippedArtifacts | null 
 /**
  * Apply artifact bonuses to hunter stats (percentage-based)
  */
-export const applyArtifactBonuses = (baseStats: HunterStats, artifactBonuses: ArtifactStatBonus): HunterStats => {
+export const applyArtifactBonuses = (
+  baseStats: HunterStats,
+  artifactBonuses: ArtifactStatBonus
+): HunterStats => {
   return {
     strength: Math.floor(baseStats.strength * (1 + (artifactBonuses.strength || 0) / 100)),
     agility: Math.floor(baseStats.agility * (1 + (artifactBonuses.agility || 0) / 100)),
-    intelligence: Math.floor(baseStats.intelligence * (1 + (artifactBonuses.intelligence || 0) / 100)),
+    intelligence: Math.floor(
+      baseStats.intelligence * (1 + (artifactBonuses.intelligence || 0) / 100)
+    ),
     vitality: Math.floor(baseStats.vitality * (1 + (artifactBonuses.vitality || 0) / 100)),
     sense: Math.floor(baseStats.sense * (1 + (artifactBonuses.sense || 0) / 100)),
     authority: baseStats.authority, // Authority is not affected by artifacts
@@ -171,7 +180,10 @@ export const getMaxCraftableRank = (blacksmithLevel: number): ArtifactRank => {
 /**
  * Check if blacksmith level allows crafting this rank
  */
-export const canBlacksmithCraftRank = (blacksmithLevel: number, artifactRank: ArtifactRank): boolean => {
+export const canBlacksmithCraftRank = (
+  blacksmithLevel: number,
+  artifactRank: ArtifactRank
+): boolean => {
   const maxRank = getMaxCraftableRank(blacksmithLevel);
   const rankOrder: ArtifactRank[] = ['E', 'D', 'C', 'B', 'A', 'S'];
   const maxRankIndex = rankOrder.indexOf(maxRank);
@@ -179,4 +191,3 @@ export const canBlacksmithCraftRank = (blacksmithLevel: number, artifactRank: Ar
 
   return artifactRankIndex <= maxRankIndex;
 };
-

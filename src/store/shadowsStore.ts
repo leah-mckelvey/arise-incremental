@@ -1,7 +1,7 @@
-import { createStore } from "@ts-query/core";
-import type { Shadow } from "./types";
+import { createStore } from '@ts-query/core';
+import type { Shadow } from './types';
 
-const STORAGE_KEY = "arise-shadows-state";
+const STORAGE_KEY = 'arise-shadows-state';
 
 // Counter to ensure unique shadow IDs even when extracted in the same millisecond
 let shadowIdCounter = 0;
@@ -12,11 +12,7 @@ export interface ShadowsState {
 
   // Actions
   extractShadow: (name: string, dungeonId: string) => Shadow;
-  addXpToShadow: (
-    shadowId: string,
-    xp: number,
-    onLevelUp?: (newLevel: number) => void,
-  ) => void;
+  addXpToShadow: (shadowId: string, xp: number, onLevelUp?: (newLevel: number) => void) => void;
   getShadowsForDungeon: (dungeonId: string) => Shadow[];
   unlockNecromancer: () => void;
   reset: () => void;
@@ -34,7 +30,7 @@ const loadPersistedState = (): Partial<ShadowsState> | null => {
       return JSON.parse(stored);
     }
   } catch (error) {
-    console.error("Failed to load shadows state:", error);
+    console.error('Failed to load shadows state:', error);
   }
   return null;
 };
@@ -46,10 +42,10 @@ const persistState = (state: ShadowsState) => {
       JSON.stringify({
         shadows: state.shadows,
         necromancerUnlocked: state.necromancerUnlocked,
-      }),
+      })
     );
   } catch (error) {
-    console.error("Failed to persist shadows state:", error);
+    console.error('Failed to persist shadows state:', error);
   }
 };
 
@@ -63,12 +59,11 @@ export const useShadowsStore = createStore<ShadowsState>((set, get) => {
 
   const store: ShadowsState = {
     shadows: persisted?.shadows ?? initial.shadows,
-    necromancerUnlocked:
-      persisted?.necromancerUnlocked ?? initial.necromancerUnlocked,
+    necromancerUnlocked: persisted?.necromancerUnlocked ?? initial.necromancerUnlocked,
 
     extractShadow: (name, dungeonId) => {
       if (!get().necromancerUnlocked) {
-        console.warn("Cannot extract shadows - Necromancer not unlocked");
+        console.warn('Cannot extract shadows - Necromancer not unlocked');
         return {} as Shadow;
       }
 
@@ -82,7 +77,7 @@ export const useShadowsStore = createStore<ShadowsState>((set, get) => {
       const newShadow: Shadow = {
         id: `shadow-${Date.now()}-${shadowIdCounter++}`,
         name,
-        type: "shadow",
+        type: 'shadow',
         originDungeonId: dungeonId,
         level: 1,
         xp: 0,
@@ -125,16 +120,12 @@ export const useShadowsStore = createStore<ShadowsState>((set, get) => {
     },
 
     getShadowsForDungeon: (dungeonId) => {
-      return get().shadows.filter(
-        (shadow) => shadow.originDungeonId === dungeonId,
-      );
+      return get().shadows.filter((shadow) => shadow.originDungeonId === dungeonId);
     },
 
     unlockNecromancer: () => {
       set({ necromancerUnlocked: true });
-      console.log(
-        "🌑 Necromancer unlocked! You can now extract shadows from solo dungeons.",
-      );
+      console.log('🌑 Necromancer unlocked! You can now extract shadows from solo dungeons.');
     },
 
     reset: () => {

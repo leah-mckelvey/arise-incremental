@@ -52,15 +52,15 @@ export const rollTier = (blacksmithLevel: number): ArtifactTier => {
 export const getTierStatRange = (tier: ArtifactTier): [number, number] => {
   switch (tier) {
     case 'Common':
-      return [0.8, 1.0];   // 80-100% of base
+      return [0.8, 1.0]; // 80-100% of base
     case 'Uncommon':
-      return [1.0, 1.3];   // 100-130% of base
+      return [1.0, 1.3]; // 100-130% of base
     case 'Rare':
-      return [1.3, 1.7];   // 130-170% of base
+      return [1.3, 1.7]; // 130-170% of base
     case 'Epic':
-      return [1.7, 2.2];   // 170-220% of base
+      return [1.7, 2.2]; // 170-220% of base
     case 'Legendary':
-      return [2.2, 3.0];   // 220-300% of base
+      return [2.2, 3.0]; // 220-300% of base
   }
 };
 
@@ -88,22 +88,26 @@ export const getTierMaxUpgrades = (tier: ArtifactTier): number => {
 export const getTierColor = (tier: ArtifactTier): string => {
   switch (tier) {
     case 'Common':
-      return '#9d9d9d';    // Gray
+      return '#9d9d9d'; // Gray
     case 'Uncommon':
-      return '#1eff00';    // Green
+      return '#1eff00'; // Green
     case 'Rare':
-      return '#0070dd';    // Blue
+      return '#0070dd'; // Blue
     case 'Epic':
-      return '#a335ee';    // Purple
+      return '#a335ee'; // Purple
     case 'Legendary':
-      return '#ff8000';    // Orange
+      return '#ff8000'; // Orange
   }
 };
 
 /**
  * Roll random stats within tier range
  */
-export const rollStats = (rank: ArtifactRank, slot: ArtifactSlot, tier: ArtifactTier): ArtifactStatBonus => {
+export const rollStats = (
+  rank: ArtifactRank,
+  slot: ArtifactSlot,
+  tier: ArtifactTier
+): ArtifactStatBonus => {
   // Base stat values by rank
   const rankMultipliers: Record<ArtifactRank, number> = {
     E: 5,
@@ -140,7 +144,13 @@ export const rollStats = (rank: ArtifactRank, slot: ArtifactSlot, tier: Artifact
     if (Math.random() > 0.5) stats.vitality = Math.floor(baseValue * 0.3 * rollMultiplier());
   } else if (slot === 'ring1' || slot === 'ring2') {
     // Rings can roll any stat
-    const statTypes: Array<keyof ArtifactStatBonus> = ['strength', 'agility', 'intelligence', 'vitality', 'sense'];
+    const statTypes: Array<keyof ArtifactStatBonus> = [
+      'strength',
+      'agility',
+      'intelligence',
+      'vitality',
+      'sense',
+    ];
     const primaryStat = statTypes[Math.floor(Math.random() * statTypes.length)];
     stats[primaryStat] = Math.floor(baseValue * rollMultiplier());
   }
@@ -152,11 +162,47 @@ export const rollStats = (rank: ArtifactRank, slot: ArtifactSlot, tier: Artifact
  * Name prefixes based on primary stat
  */
 const statPrefixes: Record<string, string[]> = {
-  strength: ['Mighty', 'Brutal', 'Crushing', 'Savage', 'Titanic', 'Berserker\'s', 'Warrior\'s', 'Champion\'s'],
-  agility: ['Swift', 'Nimble', 'Quick', 'Phantom', 'Shadow', 'Assassin\'s', 'Rogue\'s', 'Hunter\'s'],
-  intelligence: ['Arcane', 'Mystic', 'Sage\'s', 'Scholar\'s', 'Wizard\'s', 'Enchanted', 'Magical', 'Ethereal'],
-  vitality: ['Stalwart', 'Enduring', 'Fortified', 'Guardian\'s', 'Defender\'s', 'Resilient', 'Unyielding', 'Immortal'],
-  sense: ['Keen', 'Perceptive', 'Vigilant', 'Observer\'s', 'Watcher\'s', 'All-Seeing', 'Prophetic', 'Visionary'],
+  strength: [
+    'Mighty',
+    'Brutal',
+    'Crushing',
+    'Savage',
+    'Titanic',
+    "Berserker's",
+    "Warrior's",
+    "Champion's",
+  ],
+  agility: ['Swift', 'Nimble', 'Quick', 'Phantom', 'Shadow', "Assassin's", "Rogue's", "Hunter's"],
+  intelligence: [
+    'Arcane',
+    'Mystic',
+    "Sage's",
+    "Scholar's",
+    "Wizard's",
+    'Enchanted',
+    'Magical',
+    'Ethereal',
+  ],
+  vitality: [
+    'Stalwart',
+    'Enduring',
+    'Fortified',
+    "Guardian's",
+    "Defender's",
+    'Resilient',
+    'Unyielding',
+    'Immortal',
+  ],
+  sense: [
+    'Keen',
+    'Perceptive',
+    'Vigilant',
+    "Observer's",
+    "Watcher's",
+    'All-Seeing',
+    'Prophetic',
+    'Visionary',
+  ],
 };
 
 /**
@@ -220,4 +266,3 @@ export const generateArtifactName = (
 
   return `${prefix} ${baseName} ${suffix}`;
 };
-

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   gameStore,
   initializeGame,
@@ -7,10 +7,10 @@ import {
   useResearchStore,
   purchaseBuilding,
   allocateStat,
-} from "./store/gameStore";
-import * as gameApi from "./api/gameApi";
-import type { TransactionResponse, GameStateResponse } from "../shared/types";
-import { initialBuildings } from "./data/initialBuildings";
+} from './store/gameStore';
+import * as gameApi from './api/gameApi';
+import type { TransactionResponse, GameStateResponse } from '../shared/types';
+import { initialBuildings } from './data/initialBuildings';
 
 /**
  * Frontend Integration Tests
@@ -22,7 +22,7 @@ import { initialBuildings } from "./data/initialBuildings";
  */
 
 // Mock the API module
-vi.mock("./api/gameApi");
+vi.mock('./api/gameApi');
 
 // Helper to get current resources
 function getResources() {
@@ -69,7 +69,7 @@ function createMockGameState(): GameStateResponse {
         xp: 0,
         xpToNextLevel: 100,
         statPoints: 0,
-        rank: "E",
+        rank: 'E',
         stats: {
           strength: 10,
           agility: 10,
@@ -99,7 +99,7 @@ function createMockGameState(): GameStateResponse {
   };
 }
 
-describe("Frontend Integration Tests", () => {
+describe('Frontend Integration Tests', () => {
   beforeEach(async () => {
     // Clear localStorage to start fresh
     localStorage.clear();
@@ -142,8 +142,8 @@ describe("Frontend Integration Tests", () => {
     vi.restoreAllMocks();
   });
 
-  describe("1. Initial Load & Sync", () => {
-    it("1.1 should load first-time user and sync with backend", async () => {
+  describe('1. Initial Load & Sync', () => {
+    it('1.1 should load first-time user and sync with backend', async () => {
       // GIVEN: New user with no saved state and mocked API response
       localStorage.clear();
 
@@ -160,21 +160,21 @@ describe("Frontend Integration Tests", () => {
       // Backend creates new game state and frontend syncs
       const resources = getResources();
       expect(resources).toBeDefined();
-      expect(typeof resources.essence).toBe("number");
-      expect(typeof resources.crystals).toBe("number");
-      expect(typeof resources.gold).toBe("number");
+      expect(typeof resources.essence).toBe('number');
+      expect(typeof resources.crystals).toBe('number');
+      expect(typeof resources.gold).toBe('number');
 
       const hunter = getHunter();
       expect(hunter.level).toBeGreaterThanOrEqual(1);
       expect(hunter.xp).toBeGreaterThanOrEqual(0);
 
-      console.log("✅ 1.1: Initial sync successful", {
+      console.log('✅ 1.1: Initial sync successful', {
         resources,
         hunter: { level: hunter.level, xp: hunter.xp },
       });
     });
 
-    it("1.2 should skip sync when mutations are pending", async () => {
+    it('1.2 should skip sync when mutations are pending', async () => {
       // GIVEN: User has synced once
       initializeGame();
       await gameStore.getState().syncWithServer();
@@ -191,12 +191,12 @@ describe("Frontend Integration Tests", () => {
       expect(lastSyncAfter).toBe(lastSyncBefore);
       expect(gameStore.getState().pendingMutations).toBe(1);
 
-      console.log("✅ 1.2: Sync correctly skipped during pending mutations");
+      console.log('✅ 1.2: Sync correctly skipped during pending mutations');
     });
   });
 
-  describe("2. Resource Gathering Flow", () => {
-    it("2.1 should successfully gather resource with mocked API", async () => {
+  describe('2. Resource Gathering Flow', () => {
+    it('2.1 should successfully gather resource with mocked API', async () => {
       // GIVEN: User has initial resources
       initializeGame();
 
@@ -220,13 +220,13 @@ describe("Frontend Integration Tests", () => {
       vi.mocked(gameApi.gatherResource).mockResolvedValue(mockResponse);
 
       // WHEN: User gathers essence (optimistic update + API call)
-      gameStore.getState().gatherResource("essence");
+      gameStore.getState().gatherResource('essence');
 
       // Wait for API call to complete - give it a moment for the async operation
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // THEN: API was called
-      expect(gameApi.gatherResource).toHaveBeenCalledWith("essence");
+      expect(gameApi.gatherResource).toHaveBeenCalledWith('essence');
 
       // Pending mutations should be cleared
       expect(gameStore.getState().pendingMutations).toBe(0);
@@ -238,14 +238,14 @@ describe("Frontend Integration Tests", () => {
       // Hunter gained XP
       expect(getHunter().xp).toBeGreaterThan(0);
 
-      console.log("✅ 2.1: Gather successful", {
+      console.log('✅ 2.1: Gather successful', {
         before: essenceBefore,
         after: essenceAfter,
         xpGained: getHunter().xp,
       });
     });
 
-    it("2.2 should handle rapid gathering with mocked API", async () => {
+    it('2.2 should handle rapid gathering with mocked API', async () => {
       // GIVEN: User has initial resources
       initializeGame();
 
@@ -271,12 +271,12 @@ describe("Frontend Integration Tests", () => {
       });
 
       // WHEN: User gathers 3 times rapidly
-      gameStore.getState().gatherResource("essence");
-      gameStore.getState().gatherResource("essence");
-      gameStore.getState().gatherResource("essence");
+      gameStore.getState().gatherResource('essence');
+      gameStore.getState().gatherResource('essence');
+      gameStore.getState().gatherResource('essence');
 
       // Wait for all API calls to complete
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // THEN: All API calls were made
       expect(gameApi.gatherResource).toHaveBeenCalledTimes(3);
@@ -288,15 +288,15 @@ describe("Frontend Integration Tests", () => {
       const essenceAfter = getResources().essence;
       expect(essenceAfter).toBeGreaterThan(essenceBefore);
 
-      console.log("✅ 2.2: Rapid gathering successful", {
+      console.log('✅ 2.2: Rapid gathering successful', {
         before: essenceBefore,
         after: essenceAfter,
       });
     });
   });
 
-  describe("3. Building Purchase Flow", () => {
-    it("3.1 should successfully purchase building with mocked API", async () => {
+  describe('3. Building Purchase Flow', () => {
+    it('3.1 should successfully purchase building with mocked API', async () => {
       // GIVEN: User has sufficient resources
       initializeGame();
 
@@ -333,13 +333,13 @@ describe("Frontend Integration Tests", () => {
       vi.mocked(gameApi.purchaseBuilding).mockResolvedValue(mockResponse);
 
       // WHEN: User purchases essenceExtractor via coordinated action
-      await purchaseBuilding("essenceExtractor");
+      await purchaseBuilding('essenceExtractor');
 
       // Wait for API call to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // THEN: API was called
-      expect(gameApi.purchaseBuilding).toHaveBeenCalledWith("essenceExtractor");
+      expect(gameApi.purchaseBuilding).toHaveBeenCalledWith('essenceExtractor');
 
       // Pending mutations should be cleared
       expect(gameStore.getState().pendingMutations).toBe(0);
@@ -350,7 +350,7 @@ describe("Frontend Integration Tests", () => {
       // Building count increased
       expect(getBuildings().essenceExtractor?.count).toBe(extractorCountBefore + 1);
 
-      console.log("✅ 3.1: Building purchase successful", {
+      console.log('✅ 3.1: Building purchase successful', {
         essenceBefore,
         essenceAfter: getResources().essence,
         extractorCount: getBuildings().essenceExtractor?.count,
@@ -358,8 +358,8 @@ describe("Frontend Integration Tests", () => {
     });
   });
 
-  describe("4. Hunter Stat Allocation", () => {
-    it("4.1 should handle stat allocation failure gracefully with client-side validation", async () => {
+  describe('4. Hunter Stat Allocation', () => {
+    it('4.1 should handle stat allocation failure gracefully with client-side validation', async () => {
       // GIVEN: Hunter has NO stat points (level 1, no XP)
       initializeGame();
 
@@ -369,10 +369,10 @@ describe("Frontend Integration Tests", () => {
       expect(statPointsBefore).toBe(0); // Verify no stat points
 
       // WHEN: User tries to allocate (should fail client-side validation)
-      await allocateStat("strength");
+      await allocateStat('strength');
 
       // Wait a bit to ensure no async operations
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // THEN: API should NOT be called (client-side validation prevents it)
       expect(gameApi.allocateStat).not.toHaveBeenCalled();
@@ -384,7 +384,9 @@ describe("Frontend Integration Tests", () => {
       expect(getHunter().stats.strength).toBe(strengthBefore);
       expect(getHunter().statPoints).toBe(statPointsBefore);
 
-      console.log("✅ 4.1: Stat allocation correctly rejected when no points available (client-side validation)");
+      console.log(
+        '✅ 4.1: Stat allocation correctly rejected when no points available (client-side validation)'
+      );
     });
   });
 });

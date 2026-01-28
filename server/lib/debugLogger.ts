@@ -45,7 +45,7 @@ export function logTransaction(log: TransactionLog) {
   }[log.phase];
 
   console.log(`${emoji} [${log.endpoint}] ${log.phase} - ${log.userId.substring(0, 8)}...`);
-  
+
   if (log.clientTxId) {
     console.log(`   TxID: ${log.clientTxId}`);
   }
@@ -59,11 +59,15 @@ export function logTransaction(log: TransactionLog) {
   }
 
   if (log.resources) {
-    console.log(`   Resources: E=${log.resources.essence} C=${log.resources.crystals} G=${log.resources.gold} S=${log.resources.souls}`);
+    console.log(
+      `   Resources: E=${log.resources.essence} C=${log.resources.crystals} G=${log.resources.gold} S=${log.resources.souls}`
+    );
   }
 
   if (log.resourceCaps) {
-    console.log(`   Caps: E=${log.resourceCaps.essence} C=${log.resourceCaps.crystals} G=${log.resourceCaps.gold} S=${log.resourceCaps.souls}`);
+    console.log(
+      `   Caps: E=${log.resourceCaps.essence} C=${log.resourceCaps.crystals} G=${log.resourceCaps.gold} S=${log.resourceCaps.souls}`
+    );
   }
 
   if (log.error) {
@@ -75,7 +79,7 @@ export function logTransaction(log: TransactionLog) {
 
 export function getTransactionLogs(userId?: string): TransactionLog[] {
   if (userId) {
-    return transactionLogs.filter(log => log.userId === userId);
+    return transactionLogs.filter((log) => log.userId === userId);
   }
   return transactionLogs;
 }
@@ -89,7 +93,10 @@ export function clearTransactionLogs() {
  */
 export function createTransactionLogger(endpoint: string, userId: string, clientTxId?: string) {
   return {
-    start: (resources: TransactionLog['resources'], resourceCaps: TransactionLog['resourceCaps']) => {
+    start: (
+      resources: TransactionLog['resources'],
+      resourceCaps: TransactionLog['resourceCaps']
+    ) => {
       logTransaction({
         timestamp: Date.now(),
         userId,
@@ -112,7 +119,10 @@ export function createTransactionLogger(endpoint: string, userId: string, client
       });
     },
 
-    afterPassive: (resources: TransactionLog['resources'], resourceCaps: TransactionLog['resourceCaps']) => {
+    afterPassive: (
+      resources: TransactionLog['resources'],
+      resourceCaps: TransactionLog['resourceCaps']
+    ) => {
       logTransaction({
         timestamp: Date.now(),
         userId,
@@ -124,7 +134,11 @@ export function createTransactionLogger(endpoint: string, userId: string, client
       });
     },
 
-    validation: (action: string, cost: Partial<Record<string, number>>, resources: TransactionLog['resources']) => {
+    validation: (
+      action: string,
+      cost: Partial<Record<string, number>>,
+      resources: TransactionLog['resources']
+    ) => {
       logTransaction({
         timestamp: Date.now(),
         userId,
@@ -137,7 +151,10 @@ export function createTransactionLogger(endpoint: string, userId: string, client
       });
     },
 
-    success: (resources: TransactionLog['resources'], resourceCaps: TransactionLog['resourceCaps']) => {
+    success: (
+      resources: TransactionLog['resources'],
+      resourceCaps: TransactionLog['resourceCaps']
+    ) => {
       logTransaction({
         timestamp: Date.now(),
         userId,
@@ -162,4 +179,3 @@ export function createTransactionLogger(endpoint: string, userId: string, client
     },
   };
 }
-

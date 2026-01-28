@@ -210,7 +210,14 @@ export function calculateTickGains(
   tickDuration: number, // in seconds
   hunterStats?: HunterStats
 ): { resourceGains: Resources; xpGain: number } {
-  return calculateTickGainsShared(buildings, research, resources, hunterLevel, tickDuration, hunterStats);
+  return calculateTickGainsShared(
+    buildings,
+    research,
+    resources,
+    hunterLevel,
+    tickDuration,
+    hunterStats
+  );
 }
 
 // ============================================================================
@@ -230,7 +237,10 @@ export function calculateRank(level: number): string {
   return 'E';
 }
 
-export function processXpGain(hunter: Hunter, xpGain: number): { hunter: Hunter; levelsGained: number } {
+export function processXpGain(
+  hunter: Hunter,
+  xpGain: number
+): { hunter: Hunter; levelsGained: number } {
   const newHunter = { ...hunter };
   let newXp = newHunter.xp + xpGain;
   let levelsGained = 0;
@@ -276,7 +286,7 @@ export function allocateStat(hunter: Hunter, stat: keyof HunterStats): Hunter | 
 export function calculateOfflineGains(
   state: GameStateDTO,
   lastUpdate: number,
-  now: number = Date.now(),
+  now: number = Date.now()
 ): OfflineGains {
   const timeAway = Math.max(0, now - lastUpdate);
   const cappedTime = Math.min(timeAway, MAX_OFFLINE_TIME_MS);
@@ -316,7 +326,7 @@ export function applyPassiveIncome(
   hunterLevel: number,
   hunterStats: HunterStats,
   lastUpdate: number | null | undefined,
-  now: number = Date.now(),
+  now: number = Date.now()
 ): Resources {
   // If lastUpdate is null/undefined, use current time (no passive income)
   const lastUpdateTime = lastUpdate ?? now;
@@ -324,7 +334,13 @@ export function applyPassiveIncome(
   const deltaSeconds = deltaMs / 1000;
 
   // Calculate DYNAMIC resource caps (accounts for buildings, research, hunter stats)
-  const dynamicCaps = calculateResourceCaps(baseCaps, buildings, research, hunterLevel, hunterStats);
+  const dynamicCaps = calculateResourceCaps(
+    baseCaps,
+    buildings,
+    research,
+    hunterLevel,
+    hunterStats
+  );
 
   // Calculate passive gains using shared function (includes all bonuses)
   const { resourceGains } = calculateTickGains(
@@ -340,4 +356,3 @@ export function applyPassiveIncome(
   const newResources = addResources(currentResources, resourceGains);
   return applyResourceCaps(newResources, dynamicCaps);
 }
-

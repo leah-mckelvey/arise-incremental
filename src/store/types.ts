@@ -52,12 +52,7 @@ export interface Hunter {
 }
 
 // Notification system types
-export type NotificationType =
-  | "dungeon_complete"
-  | "level_up"
-  | "unlock"
-  | "craft"
-  | "error";
+export type NotificationType = 'dungeon_complete' | 'level_up' | 'unlock' | 'craft' | 'error';
 
 export interface Notification {
   id: string;
@@ -70,8 +65,8 @@ export interface Notification {
 }
 
 // Dungeon system types
-export type DungeonType = "solo" | "alliance";
-export type DungeonRank = "E" | "D" | "C" | "B" | "A" | "S";
+export type DungeonType = 'solo' | 'alliance';
+export type DungeonRank = 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
 
 export interface DungeonRewards {
   essence: number;
@@ -107,7 +102,7 @@ export interface ActiveDungeon {
 }
 
 // Companion system types (Allies & Shadows)
-export type CompanionType = "ally" | "shadow";
+export type CompanionType = 'ally' | 'shadow';
 
 export interface Companion {
   id: string;
@@ -121,35 +116,30 @@ export interface Companion {
 }
 
 export interface Ally extends Companion {
-  type: "ally";
+  type: 'ally';
 }
 
 export interface Shadow extends Companion {
-  type: "shadow";
+  type: 'shadow';
 }
 
 // Artifact system types
-export type ArtifactRank = "E" | "D" | "C" | "B" | "A" | "S";
+export type ArtifactRank = 'E' | 'D' | 'C' | 'B' | 'A' | 'S';
 
-export type ArtifactTier =
-  | "Common"
-  | "Uncommon"
-  | "Rare"
-  | "Epic"
-  | "Legendary";
+export type ArtifactTier = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary';
 
 export type ArtifactSlot =
-  | "weapon"
-  | "head"
-  | "chest"
-  | "hands"
-  | "legs"
-  | "feet"
-  | "neck"
-  | "ears"
-  | "wrist"
-  | "ring1"
-  | "ring2";
+  | 'weapon'
+  | 'head'
+  | 'chest'
+  | 'hands'
+  | 'legs'
+  | 'feet'
+  | 'neck'
+  | 'ears'
+  | 'wrist'
+  | 'ring1'
+  | 'ring2';
 
 export interface ArtifactStatBonus {
   strength?: number; // Percentage bonus (e.g., 5 = +5%)

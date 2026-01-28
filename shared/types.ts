@@ -5,13 +5,13 @@
 
 // Game resource types
 export interface Resources {
-  essence: number;      // 🔮 Basic dungeon resource
-  crystals: number;     // 💎 Mid-tier resource
-  gold: number;         // 💰 In-game currency
-  souls: number;        // 👻 For shadow upgrades
-  attraction: number;   // ⭐ For recruiting allies
-  gems: number;         // 💠 Premium currency
-  knowledge: number;    // 📚 For research/tech tree
+  essence: number; // 🔮 Basic dungeon resource
+  crystals: number; // 💎 Mid-tier resource
+  gold: number; // 💰 In-game currency
+  souls: number; // 👻 For shadow upgrades
+  attraction: number; // ⭐ For recruiting allies
+  gems: number; // 💠 Premium currency
+  knowledge: number; // 📚 For research/tech tree
 }
 
 // Resource caps/storage limits
@@ -80,7 +80,7 @@ export type ArtifactSlot =
 export type ArtifactTier = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary';
 
 export interface ArtifactStatBonus {
-  strength?: number;      // Percentage bonus (e.g., 5 = +5%)
+  strength?: number; // Percentage bonus (e.g., 5 = +5%)
   agility?: number;
   intelligence?: number;
   vitality?: number;
@@ -189,6 +189,7 @@ export interface Research {
   cost: number; // Knowledge cost
   researched: boolean;
   requires?: string[]; // IDs of prerequisite research
+  unlocks?: string[]; // IDs of buildings/research this unlocks
   effects?: {
     productionMultiplier?: Partial<Record<keyof Resources, number>>;
     buildingEfficiency?: Record<string, number>;
@@ -324,4 +325,3 @@ export interface ExtractShadowRequest {
 export interface ResetGameRequest {
   clientTxId: string;
 }
-
