@@ -359,7 +359,7 @@ describe("Frontend Integration Tests", () => {
   });
 
   describe("4. Hunter Stat Allocation", () => {
-    it("4.1 should handle stat allocation failure gracefully with mocked API", async () => {
+    it("4.1 should handle stat allocation failure gracefully with client-side validation", async () => {
       // GIVEN: Hunter has NO stat points (level 1, no XP)
       initializeGame();
 
@@ -368,26 +368,23 @@ describe("Frontend Integration Tests", () => {
 
       expect(statPointsBefore).toBe(0); // Verify no stat points
 
-      // Mock API failure - backend rejects because no stat points
-      vi.mocked(gameApi.allocateStat).mockRejectedValue(new Error("No stat points available"));
-
-      // WHEN: User tries to allocate (should fail and rollback)
+      // WHEN: User tries to allocate (should fail client-side validation)
       await allocateStat("strength");
 
-      // Wait for API call to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait a bit to ensure no async operations
+      await new Promise(resolve => setTimeout(resolve, 50));
 
-      // THEN: API was called
-      expect(gameApi.allocateStat).toHaveBeenCalledWith("strength");
+      // THEN: API should NOT be called (client-side validation prevents it)
+      expect(gameApi.allocateStat).not.toHaveBeenCalled();
 
-      // Pending mutations should be cleared
+      // Pending mutations should be 0 (no API call was made)
       expect(gameStore.getState().pendingMutations).toBe(0);
 
-      // State unchanged (rollback occurred)
+      // State unchanged (validation prevented the change)
       expect(getHunter().stats.strength).toBe(strengthBefore);
       expect(getHunter().statPoints).toBe(statPointsBefore);
 
-      console.log("✅ 4.1: Stat allocation correctly rejected when no points available");
+      console.log("✅ 4.1: Stat allocation correctly rejected when no points available (client-side validation)");
     });
   });
 });
