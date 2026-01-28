@@ -457,6 +457,13 @@ export const purchaseBuilding = async (buildingId: string) => {
     });
   });
 
+  // Check if the purchase actually happened (buildingsStore validates resources)
+  const currentBuildings = useBuildingsStore.getState().buildings;
+  if (currentBuildings === previousBuildings) {
+    // No change - validation failed (insufficient resources or invalid building)
+    return;
+  }
+
   // Track pending mutation
   gameStore.setState(s => ({ pendingMutations: s.pendingMutations + 1 }));
 
@@ -593,10 +600,16 @@ export const allocateStat = async (stat: keyof import('./types').HunterStats) =>
   // Optimistic update
   useHunterStore.getState().allocateStat(stat);
 
+  // Check if the allocation actually happened (hunterStore validates stat points)
+  const hunter = useHunterStore.getState().hunter;
+  if (hunter === previousHunter) {
+    // No change - validation failed (no stat points available)
+    return;
+  }
+
   // Recalculate caps after stat allocation
   const buildings = useBuildingsStore.getState().buildings;
   const research = useResearchStore.getState().research;
-  const hunter = useHunterStore.getState().hunter;
   const effectiveStats = getEffectiveHunterStats();
 
   gameStore.setState({
