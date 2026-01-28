@@ -19,7 +19,21 @@ import type {
 } from '../../shared/types';
 import { logFrontendTransaction } from '../lib/debugLogger';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+let API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+/**
+ * Set API base URL (for testing)
+ */
+export function setApiBaseUrl(url: string): void {
+  API_BASE = url;
+}
+
+/**
+ * Get current API base URL (for testing)
+ */
+export function getApiBaseUrl(): string {
+  return API_BASE;
+}
 
 /**
  * Generate a unique client transaction ID

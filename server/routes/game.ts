@@ -1,12 +1,53 @@
 import { Router } from "express";
-import { eq } from "drizzle-orm";
-import { db } from "../db/client.js";
+import { eq, sql } from "drizzle-orm";
+import { db as defaultDb, type Database } from "../db/client.js";
 import {
   users,
   gameStates,
   transactions,
   type GameState,
 } from "../db/schema.js";
+
+// Module-level db instance - can be overridden for testing via setDatabase()
+let db: Database = defaultDb;
+let dbName = 'defaultDb';
+
+// Store a reference to verify identity
+let injectedDbRef: Database | null = null;
+
+/**
+ * Set the database instance to use for all routes.
+ * Call this BEFORE using the router (e.g., in test setup).
+ */
+export function setDatabase(database: Database): void {
+  db = database;
+  injectedDbRef = database;
+  dbName = 'injectedDb';
+  console.log('[setDatabase] Database instance set to:', dbName);
+}
+
+/**
+ * Check if the current db is the injected one
+ */
+export function verifyDbInstance(testDb: Database): boolean {
+  return db === testDb && db === injectedDbRef;
+}
+
+/**
+ * Debug function: read game state directly using the injected db
+ */
+export async function debugReadGameState(userId: string): Promise<unknown> {
+  const result = await db.get(sql`SELECT id, essence FROM game_states WHERE user_id = ${userId}`);
+  console.log('[debugReadGameState] Direct read using db:', dbName, 'result:', result);
+  return result;
+}
+
+/**
+ * Get the current database name (for debugging)
+ */
+export function getDbName(): string {
+  return dbName;
+}
 import { authMiddleware, type AuthRequest } from "../middleware/auth.js";
 import { queryClient, CACHE_TTL } from "../db/cache.js";
 import {
@@ -152,11 +193,25 @@ gameRouter.get("/state", async (req: AuthRequest, res) => {
         }
 
         // Get or create game state
+        console.log('[BACKEND STEP 1] About to query database for userId:', userId, 'using db:', dbName);
+
         let gameState = await db.query.gameStates.findFirst({
           where: eq(gameStates.userId, userId),
         });
 
+        console.log('[BACKEND STEP 2] Drizzle query result:', {
+          userId,
+          found: !!gameState,
+          essence: gameState?.essence,
+          id: gameState?.id
+        });
+
+        // Also try raw SQL to compare
+        const rawResult = await db.get(sql`SELECT id, essence FROM game_states WHERE user_id = ${userId}`);
+        console.log('[BACKEND STEP 3] Raw SQL result:', rawResult);
+
         if (!gameState) {
+          console.log('[BACKEND] No game state found, CREATING NEW ONE with essence=0');
           // Create initial game state with Solo Leveling defaults
           const now = new Date();
           const [newState] = await db

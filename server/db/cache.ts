@@ -49,6 +49,10 @@ export class InMemoryAdapter implements SharedCacheAdapter {
     this.store.delete(key);
   }
 
+  async clear(): Promise<void> {
+    this.store.clear();
+  }
+
   private cleanup(): void {
     const now = Date.now();
     for (const [key, entry] of this.store.entries()) {

@@ -83,7 +83,7 @@ export const calculateBaseStats = (rank: ArtifactRank, slot: ArtifactSlot): Arti
 /**
  * Calculate total stat bonuses from all equipped artifacts
  */
-export const calculateEquippedStatBonuses = (equipped: EquippedArtifacts): ArtifactStatBonus => {
+export const calculateEquippedStatBonuses = (equipped: EquippedArtifacts | null | undefined): ArtifactStatBonus => {
   const totalBonus: ArtifactStatBonus = {
     strength: 0,
     agility: 0,
@@ -91,6 +91,10 @@ export const calculateEquippedStatBonuses = (equipped: EquippedArtifacts): Artif
     vitality: 0,
     sense: 0,
   };
+
+  if (!equipped) {
+    return totalBonus;
+  }
 
   Object.values(equipped).forEach((artifact) => {
     if (artifact) {
