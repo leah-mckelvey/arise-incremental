@@ -38,23 +38,3 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
     res.status(401).json({ error: 'Unauthorized' });
   }
 };
-
-/**
- * Optional auth middleware - doesn't fail if no auth provided
- * Useful for endpoints that work with or without authentication
- */
-export const optionalAuthMiddleware = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  // Mock authentication for local development
-  const mockUserId = 'test-user-1';
-  req.userId = mockUserId;
-  req.user = {
-    id: mockUserId,
-    email: 'test@example.com',
-  };
-
-  next();
-};

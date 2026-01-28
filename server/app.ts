@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { gameRouter } from './routes/game.js';
+import { gameRouter } from './routes/game/index.js';
 import { queryClient } from './db/cache.js';
 
 /**
@@ -36,14 +36,17 @@ export function createApp() {
   // API routes
   app.use('/api/game', gameRouter);
 
-  // Error handling middleware
-  app.use((err: Error, _req: express.Request, res: express.Response) => {
-    console.error('Error:', err);
-    res.status(500).json({
-      error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? err.message : undefined,
-    });
-  });
+  // Error handling middleware (Express requires 4 params to treat this as error handler)
+  app.use(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+      console.error('Error:', err);
+      res.status(500).json({
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? err.message : undefined,
+      });
+    }
+  );
 
   return app;
 }

@@ -247,7 +247,7 @@ export interface TransactionResponse {
 
 // Transaction request types
 export interface GatherResourceRequest {
-  resource: 'essence' | 'crystals' | 'gold';
+  resource: 'essence' | 'crystals' | 'gold' | 'souls' | 'attraction' | 'gems' | 'knowledge';
   clientTxId: string;
 }
 
