@@ -1,12 +1,10 @@
 import { Router } from 'express';
-import { randomUUID } from 'crypto';
 import { eq } from 'drizzle-orm';
-import { gameStates, transactions } from '../../db/schema.js';
-import { queryClient } from '../../db/cache.js';
+import { gameStates } from '../../db/schema.js';
 import { type AuthRequest } from '../../middleware/auth.js';
 import { initialBuildings } from '../../data/initialBuildings.js';
-import type { TransactionResponse, GameStateDTO } from '../../../shared/types.js';
-import { getDb, checkIdempotency } from './utils/index.js';
+import type { TransactionResponse } from '../../../shared/types.js';
+import { getDb, checkIdempotency, commitTransaction } from './utils/index.js';
 import { BASE_RESOURCE_CAPS } from '../../lib/gameLogic.js';
 
 export const adminRouter = Router();
@@ -38,115 +36,84 @@ adminRouter.post('/reset', async (req: AuthRequest, res) => {
       return res.status(404).json({ error: 'Game state not found' });
     }
 
-    const now = new Date();
-
-    // Reset to initial state
-    await db
-      .update(gameStates)
-      .set({
-        version: 1,
-        essence: 0,
-        crystals: 0,
-        gold: 0,
-        souls: 0,
-        attraction: 0,
-        gems: 0,
-        knowledge: 0,
-        essenceCap: 100,
-        crystalsCap: 50,
-        goldCap: 1000,
-        soulsCap: 10,
-        attractionCap: 10,
-        gemsCap: 100,
-        knowledgeCap: 50,
-        hunterLevel: 1,
-        hunterXp: 0,
-        hunterXpToNextLevel: 100,
-        hunterRank: 'E',
-        hunterStatPoints: 0,
-        hunterHp: 100,
-        hunterMaxHp: 100,
-        hunterMana: 50,
-        hunterMaxMana: 50,
-        hunterStrength: 10,
-        hunterAgility: 10,
-        hunterIntelligence: 10,
-        hunterVitality: 10,
-        hunterSense: 10,
-        hunterAuthority: 10,
-        buildings: initialBuildings,
-        artifacts: {
-          equipped: { weapon: null, armor: null, accessory: null },
-          inventory: [],
-          blacksmithLevel: 1,
-          blacksmithXp: 0,
-        },
-        dungeons: [],
-        activeDungeons: [],
-        allies: [],
-        shadows: [],
-        research: {},
-        lastUpdate: now,
-        updatedAt: now,
-      })
-      .where(eq(gameStates.id, gameState.id));
-
-    await queryClient.invalidateQueries(['gameState', userId]);
-
-    // Build full state DTO from reset values
-    const stateDTO: GameStateDTO = {
-      version: 1,
-      resources: {
-        essence: 0,
-        crystals: 0,
-        gold: 0,
-        souls: 0,
-        attraction: 0,
-        gems: 0,
-        knowledge: 0,
+    // Initial hunter for reset
+    const initialHunter = {
+      level: 1,
+      xp: 0,
+      xpToNextLevel: 100,
+      rank: 'E' as const,
+      statPoints: 0,
+      hp: 100,
+      maxHp: 100,
+      mana: 50,
+      maxMana: 50,
+      stats: {
+        strength: 10,
+        agility: 10,
+        intelligence: 10,
+        vitality: 10,
+        sense: 10,
+        authority: 10,
       },
-      resourceCaps: { ...BASE_RESOURCE_CAPS },
-      hunter: {
-        level: 1,
-        xp: 0,
-        xpToNextLevel: 100,
-        rank: 'E',
-        statPoints: 0,
-        hp: 100,
-        maxHp: 100,
-        mana: 50,
-        maxMana: 50,
-        stats: {
-          strength: 10,
-          agility: 10,
-          intelligence: 10,
-          vitality: 10,
-          sense: 10,
-          authority: 10,
-        },
-      },
-      buildings: initialBuildings,
-      artifacts: {
-        equipped: {},
-        inventory: [],
-        blacksmithLevel: 1,
-        blacksmithXp: 0,
-      },
-      dungeons: [],
-      activeDungeons: [],
-      allies: [],
-      shadows: [],
-      research: {},
-      lastUpdate: now.getTime(),
     };
 
-    await db.insert(transactions).values({
-      id: randomUUID(),
+    const initialArtifacts = {
+      equipped: {},
+      inventory: [],
+      blacksmithLevel: 1,
+      blacksmithXp: 0,
+    };
+
+    const initialResources = {
+      essence: 0,
+      crystals: 0,
+      gold: 0,
+      souls: 0,
+      attraction: 0,
+      gems: 0,
+      knowledge: 0,
+    };
+
+    const stateDTO = await commitTransaction({
       userId,
       clientTxId,
-      type: 'reset',
-      payload: {},
-      stateAfter: stateDTO,
+      gameState,
+      resources: initialResources,
+      resourceCaps: { ...BASE_RESOURCE_CAPS },
+      dbUpdates: {
+        buildings: initialBuildings,
+        research: {},
+        allies: [],
+        shadows: [],
+        activeDungeons: [],
+        artifacts: initialArtifacts,
+        dungeons: [],
+        hunterStatPoints: initialHunter.statPoints,
+        hunterMaxHp: initialHunter.maxHp,
+        hunterMaxMana: initialHunter.maxMana,
+        hunterStrength: initialHunter.stats.strength,
+        hunterAgility: initialHunter.stats.agility,
+        hunterIntelligence: initialHunter.stats.intelligence,
+        hunterVitality: initialHunter.stats.vitality,
+        hunterSense: initialHunter.stats.sense,
+        hunterAuthority: initialHunter.stats.authority,
+        hunterLevel: initialHunter.level,
+        hunterXp: initialHunter.xp,
+        hunterXpToNextLevel: initialHunter.xpToNextLevel,
+        hunterHp: initialHunter.hp,
+        hunterMana: initialHunter.mana,
+      },
+      transaction: { type: 'reset', payload: {} },
+      overrides: {
+        buildings: initialBuildings,
+        research: {},
+        allies: [],
+        shadows: [],
+        activeDungeons: [],
+        artifacts: initialArtifacts,
+        dungeons: [],
+        hunter: initialHunter,
+      },
     });
 
     res.json({ success: true, state: stateDTO } as TransactionResponse);

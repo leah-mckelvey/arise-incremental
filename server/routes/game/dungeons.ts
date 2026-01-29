@@ -1,8 +1,6 @@
 import { Router } from 'express';
-import { randomUUID } from 'crypto';
 import { eq } from 'drizzle-orm';
-import { gameStates, transactions } from '../../db/schema.js';
-import { queryClient } from '../../db/cache.js';
+import { gameStates } from '../../db/schema.js';
 import { type AuthRequest } from '../../middleware/auth.js';
 import { processXpGain, applyResourceCaps } from '../../lib/gameLogic.js';
 import type {
@@ -10,7 +8,6 @@ import type {
   CompleteDungeonRequest,
   CancelDungeonRequest,
   TransactionResponse,
-  GameStateDTO,
   Resources,
   Dungeon,
   ActiveDungeon,
@@ -20,7 +17,7 @@ import {
   checkIdempotency,
   applyPassiveIncomeToGameState,
   extractResourceCaps,
-  transformToGameStateDTO,
+  commitTransaction,
 } from './utils/index.js';
 
 export const dungeonsRouter = Router();
@@ -87,41 +84,17 @@ dungeonsRouter.post('/start-dungeon', async (req: AuthRequest, res) => {
     const newActiveDungeons = [...activeDungeons, activeDungeon];
 
     const { resources: currentResources } = applyPassiveIncomeToGameState(gameState);
-
-    const nowDate = new Date();
-    await db
-      .update(gameStates)
-      .set({
-        essence: currentResources.essence,
-        crystals: currentResources.crystals,
-        gold: currentResources.gold,
-        souls: currentResources.souls,
-        attraction: currentResources.attraction,
-        gems: currentResources.gems,
-        knowledge: currentResources.knowledge,
-        activeDungeons: newActiveDungeons,
-        lastUpdate: nowDate,
-        updatedAt: nowDate,
-      })
-      .where(eq(gameStates.id, gameState.id));
-
-    await queryClient.invalidateQueries(['gameState', userId]);
-
     const resourceCaps = extractResourceCaps(gameState);
-    const stateDTO: GameStateDTO = transformToGameStateDTO(
-      gameState,
-      currentResources,
-      resourceCaps,
-      { activeDungeons: newActiveDungeons, lastUpdate: nowDate.getTime() }
-    );
 
-    await db.insert(transactions).values({
-      id: randomUUID(),
+    const stateDTO = await commitTransaction({
       userId,
       clientTxId,
-      type: 'start_dungeon',
-      payload: { dungeonId, partyIds },
-      stateAfter: stateDTO,
+      gameState,
+      resources: currentResources,
+      resourceCaps,
+      dbUpdates: { activeDungeons: newActiveDungeons },
+      transaction: { type: 'start_dungeon', payload: { dungeonId, partyIds: partyIds || [] } },
+      overrides: { activeDungeons: newActiveDungeons },
     });
 
     res.json({ success: true, state: stateDTO } as TransactionResponse);
@@ -227,38 +200,21 @@ dungeonsRouter.post('/complete-dungeon', async (req: AuthRequest, res) => {
     // Remove completed dungeon from active dungeons
     const newActiveDungeons = activeDungeons.filter((ad) => ad.id !== activeDungeonId);
 
-    await db
-      .update(gameStates)
-      .set({
-        essence: cappedResources.essence,
-        crystals: cappedResources.crystals,
-        gold: cappedResources.gold,
+    const stateDTO = await commitTransaction({
+      userId,
+      clientTxId,
+      gameState,
+      resources: cappedResources,
+      resourceCaps,
+      dbUpdates: {
+        activeDungeons: newActiveDungeons,
         hunterLevel: newHunter.level,
         hunterXp: newHunter.xp,
         hunterXpToNextLevel: newHunter.xpToNextLevel,
-        hunterRank: newHunter.rank,
         hunterStatPoints: newHunter.statPoints,
-        activeDungeons: newActiveDungeons,
-        updatedAt: new Date(),
-      })
-      .where(eq(gameStates.id, gameState.id));
-
-    await queryClient.invalidateQueries(['gameState', userId]);
-
-    const stateDTO: GameStateDTO = transformToGameStateDTO(
-      gameState,
-      cappedResources,
-      resourceCaps,
-      { hunter: newHunter, activeDungeons: newActiveDungeons, lastUpdate: Date.now() }
-    );
-
-    await db.insert(transactions).values({
-      id: randomUUID(),
-      userId,
-      clientTxId,
-      type: 'complete_dungeon',
-      payload: { activeDungeonId, rewards },
-      stateAfter: stateDTO,
+      },
+      transaction: { type: 'complete_dungeon', payload: { activeDungeonId, rewards } },
+      overrides: { hunter: newHunter, activeDungeons: newActiveDungeons },
     });
 
     res.json({ success: true, state: stateDTO } as TransactionResponse);
@@ -308,41 +264,17 @@ dungeonsRouter.post('/cancel-dungeon', async (req: AuthRequest, res) => {
     );
 
     const { resources: currentResources } = applyPassiveIncomeToGameState(gameState);
-
-    const nowDate = new Date();
-    await db
-      .update(gameStates)
-      .set({
-        essence: currentResources.essence,
-        crystals: currentResources.crystals,
-        gold: currentResources.gold,
-        souls: currentResources.souls,
-        attraction: currentResources.attraction,
-        gems: currentResources.gems,
-        knowledge: currentResources.knowledge,
-        activeDungeons: newActiveDungeons,
-        lastUpdate: nowDate,
-        updatedAt: nowDate,
-      })
-      .where(eq(gameStates.id, gameState.id));
-
-    await queryClient.invalidateQueries(['gameState', userId]);
-
     const resourceCaps = extractResourceCaps(gameState);
-    const stateDTO: GameStateDTO = transformToGameStateDTO(
-      gameState,
-      currentResources,
-      resourceCaps,
-      { activeDungeons: newActiveDungeons, lastUpdate: nowDate.getTime() }
-    );
 
-    await db.insert(transactions).values({
-      id: randomUUID(),
+    const stateDTO = await commitTransaction({
       userId,
       clientTxId,
-      type: 'cancel_dungeon',
-      payload: { activeDungeonId },
-      stateAfter: stateDTO,
+      gameState,
+      resources: currentResources,
+      resourceCaps,
+      dbUpdates: { activeDungeons: newActiveDungeons },
+      transaction: { type: 'cancel_dungeon', payload: { activeDungeonId } },
+      overrides: { activeDungeons: newActiveDungeons },
     });
 
     res.json({ success: true, state: stateDTO } as TransactionResponse);

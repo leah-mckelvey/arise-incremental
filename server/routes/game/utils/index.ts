@@ -16,3 +16,8 @@ export {
   type TransformOverrides,
 } from './transforms.js';
 export { applyPassiveIncomeToGameState, type PassiveIncomeResult } from './passiveIncome.js';
+export {
+  commitTransaction,
+  type CommitTransactionParams,
+  type GameStateDbUpdates,
+} from './commitTransaction.js';

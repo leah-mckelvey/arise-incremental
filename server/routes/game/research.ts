@@ -1,8 +1,6 @@
 import { Router } from 'express';
-import { randomUUID } from 'crypto';
 import { eq } from 'drizzle-orm';
-import { gameStates, transactions } from '../../db/schema.js';
-import { queryClient } from '../../db/cache.js';
+import { gameStates } from '../../db/schema.js';
 import { type AuthRequest } from '../../middleware/auth.js';
 import { calculateResourceCaps, BASE_RESOURCE_CAPS } from '../../lib/gameLogic.js';
 import { createTransactionLogger } from '../../lib/debugLogger.js';
@@ -18,8 +16,9 @@ import {
   extractResources,
   extractResourceCaps,
   extractHunterStats,
-  transformToGameStateDTO,
   applyPassiveIncomeToGameState,
+  commitTransaction,
+  transformToGameStateDTO,
 } from './utils/index.js';
 
 export const researchRouter = Router();
@@ -137,49 +136,18 @@ researchRouter.post('/purchase-research', async (req: AuthRequest, res) => {
       hunterStats
     );
 
-    const now = new Date();
-    await db
-      .update(gameStates)
-      .set({
-        essence: newResources.essence,
-        crystals: newResources.crystals,
-        gold: newResources.gold,
-        souls: newResources.souls,
-        attraction: newResources.attraction,
-        gems: newResources.gems,
-        knowledge: newResources.knowledge,
-        essenceCap: newResourceCaps.essence,
-        crystalsCap: newResourceCaps.crystals,
-        goldCap: newResourceCaps.gold,
-        soulsCap: newResourceCaps.souls,
-        attractionCap: newResourceCaps.attraction,
-        gemsCap: newResourceCaps.gems,
-        knowledgeCap: newResourceCaps.knowledge,
-        research: newResearch,
-        lastUpdate: now,
-        updatedAt: now,
-      })
-      .where(eq(gameStates.id, gameState.id));
-
-    await queryClient.invalidateQueries(['gameState', userId]);
-
-    const stateDTO: GameStateDTO = transformToGameStateDTO(
-      gameState,
-      newResources,
-      newResourceCaps,
-      { research: newResearch, lastUpdate: now.getTime() }
-    );
-    logger.success(newResources, newResourceCaps);
-
-    await db.insert(transactions).values({
-      id: randomUUID(),
+    const stateDTO = await commitTransaction({
       userId,
       clientTxId,
-      type: 'purchase_research',
-      payload: { researchId, cost },
-      stateAfter: stateDTO,
+      gameState,
+      resources: newResources,
+      resourceCaps: newResourceCaps,
+      dbUpdates: { research: newResearch },
+      transaction: { type: 'purchase_research', payload: { researchId, cost } },
+      overrides: { research: newResearch },
     });
 
+    logger.success(newResources, newResourceCaps);
     res.json({ success: true, state: stateDTO } as TransactionResponse);
   } catch (error) {
     console.error('Error purchasing research:', error);

@@ -1,8 +1,6 @@
 import { Router } from 'express';
-import { randomUUID } from 'crypto';
 import { eq } from 'drizzle-orm';
-import { gameStates, transactions } from '../../db/schema.js';
-import { queryClient } from '../../db/cache.js';
+import { gameStates } from '../../db/schema.js';
 import { type AuthRequest } from '../../middleware/auth.js';
 import { createTransactionLogger } from '../../lib/debugLogger.js';
 import type {
@@ -17,8 +15,9 @@ import {
   checkIdempotency,
   extractResources,
   extractResourceCaps,
-  transformToGameStateDTO,
   applyPassiveIncomeToGameState,
+  commitTransaction,
+  transformToGameStateDTO,
 } from './utils/index.js';
 
 export const shadowsRouter = Router();
@@ -117,49 +116,18 @@ shadowsRouter.post('/extract-shadow', async (req: AuthRequest, res) => {
       souls: currentResources.souls - cost,
     };
 
-    const nowDate = new Date();
-    await db
-      .update(gameStates)
-      .set({
-        essence: newResources.essence,
-        crystals: newResources.crystals,
-        gold: newResources.gold,
-        souls: newResources.souls,
-        attraction: newResources.attraction,
-        gems: newResources.gems,
-        knowledge: newResources.knowledge,
-        essenceCap: currentResourceCaps.essence,
-        crystalsCap: currentResourceCaps.crystals,
-        goldCap: currentResourceCaps.gold,
-        soulsCap: currentResourceCaps.souls,
-        attractionCap: currentResourceCaps.attraction,
-        gemsCap: currentResourceCaps.gems,
-        knowledgeCap: currentResourceCaps.knowledge,
-        shadows: newShadows,
-        lastUpdate: nowDate,
-        updatedAt: nowDate,
-      })
-      .where(eq(gameStates.id, gameState.id));
-
-    await queryClient.invalidateQueries(['gameState', userId]);
-
-    const stateDTO: GameStateDTO = transformToGameStateDTO(
-      gameState,
-      newResources,
-      currentResourceCaps,
-      { shadows: newShadows, lastUpdate: nowDate.getTime() }
-    );
-    logger.success(newResources, currentResourceCaps);
-
-    await db.insert(transactions).values({
-      id: randomUUID(),
+    const stateDTO = await commitTransaction({
       userId,
       clientTxId,
-      type: 'extract_shadow',
-      payload: { name, dungeonId, cost },
-      stateAfter: stateDTO,
+      gameState,
+      resources: newResources,
+      resourceCaps: currentResourceCaps,
+      dbUpdates: { shadows: newShadows },
+      transaction: { type: 'extract_shadow', payload: { name, dungeonId, cost } },
+      overrides: { shadows: newShadows },
     });
 
+    logger.success(newResources, currentResourceCaps);
     res.json({ success: true, state: stateDTO } as TransactionResponse);
   } catch (error) {
     console.error('Error extracting shadow:', error);

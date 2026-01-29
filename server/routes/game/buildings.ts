@@ -1,8 +1,6 @@
 import { Router } from 'express';
-import { randomUUID } from 'crypto';
 import { eq } from 'drizzle-orm';
-import { gameStates, transactions } from '../../db/schema.js';
-import { queryClient } from '../../db/cache.js';
+import { gameStates } from '../../db/schema.js';
 import { type AuthRequest } from '../../middleware/auth.js';
 import {
   subtractResources,
@@ -28,8 +26,9 @@ import {
   extractResources,
   extractResourceCaps,
   extractHunterStats,
-  transformToGameStateDTO,
   applyPassiveIncomeToGameState,
+  commitTransaction,
+  transformToGameStateDTO,
 } from './utils/index.js';
 
 export const buildingsRouter = Router();
@@ -128,49 +127,18 @@ buildingsRouter.post('/purchase-building', async (req: AuthRequest, res) => {
     console.log('  New essence cap:', newResourceCaps.essence);
     console.log('  Building increasesCaps:', building.increasesCaps);
 
-    const now = new Date();
-    await db
-      .update(gameStates)
-      .set({
-        essence: newResources.essence,
-        crystals: newResources.crystals,
-        gold: newResources.gold,
-        souls: newResources.souls,
-        attraction: newResources.attraction,
-        gems: newResources.gems,
-        knowledge: newResources.knowledge,
-        essenceCap: newResourceCaps.essence,
-        crystalsCap: newResourceCaps.crystals,
-        goldCap: newResourceCaps.gold,
-        soulsCap: newResourceCaps.souls,
-        attractionCap: newResourceCaps.attraction,
-        gemsCap: newResourceCaps.gems,
-        knowledgeCap: newResourceCaps.knowledge,
-        buildings: newBuildings,
-        lastUpdate: now,
-        updatedAt: now,
-      })
-      .where(eq(gameStates.id, gameState.id));
-
-    await queryClient.invalidateQueries(['gameState', userId]);
-
-    const stateDTO: GameStateDTO = transformToGameStateDTO(
-      gameState,
-      newResources,
-      newResourceCaps,
-      { buildings: newBuildings, lastUpdate: now.getTime() }
-    );
-    logger.success(newResources, newResourceCaps);
-
-    await db.insert(transactions).values({
-      id: randomUUID(),
+    const stateDTO = await commitTransaction({
       userId,
       clientTxId,
-      type: 'purchase_building',
-      payload: { buildingId, cost, quantity: 1 },
-      stateAfter: stateDTO,
+      gameState,
+      resources: newResources,
+      resourceCaps: newResourceCaps,
+      dbUpdates: { buildings: newBuildings },
+      transaction: { type: 'purchase_building', payload: { buildingId, cost, quantity: 1 } },
+      overrides: { buildings: newBuildings },
     });
 
+    logger.success(newResources, newResourceCaps);
     res.json({ success: true, state: stateDTO } as TransactionResponse);
   } catch (error) {
     console.error('Error purchasing building:', error);
@@ -270,49 +238,18 @@ buildingsRouter.post('/purchase-bulk-building', async (req: AuthRequest, res) =>
       hunterStats
     );
 
-    const now = new Date();
-    await db
-      .update(gameStates)
-      .set({
-        essence: newResources.essence,
-        crystals: newResources.crystals,
-        gold: newResources.gold,
-        souls: newResources.souls,
-        attraction: newResources.attraction,
-        gems: newResources.gems,
-        knowledge: newResources.knowledge,
-        essenceCap: newResourceCaps.essence,
-        crystalsCap: newResourceCaps.crystals,
-        goldCap: newResourceCaps.gold,
-        soulsCap: newResourceCaps.souls,
-        attractionCap: newResourceCaps.attraction,
-        gemsCap: newResourceCaps.gems,
-        knowledgeCap: newResourceCaps.knowledge,
-        buildings: newBuildings,
-        lastUpdate: now,
-        updatedAt: now,
-      })
-      .where(eq(gameStates.id, gameState.id));
-
-    await queryClient.invalidateQueries(['gameState', userId]);
-
-    const stateDTO: GameStateDTO = transformToGameStateDTO(
-      gameState,
-      newResources,
-      newResourceCaps,
-      { buildings: newBuildings, lastUpdate: now.getTime() }
-    );
-    logger.success(newResources, newResourceCaps);
-
-    await db.insert(transactions).values({
-      id: randomUUID(),
+    const stateDTO = await commitTransaction({
       userId,
       clientTxId,
-      type: 'purchase_bulk_building',
-      payload: { buildingId, cost, quantity },
-      stateAfter: stateDTO,
+      gameState,
+      resources: newResources,
+      resourceCaps: newResourceCaps,
+      dbUpdates: { buildings: newBuildings },
+      transaction: { type: 'purchase_bulk_building', payload: { buildingId, cost, quantity } },
+      overrides: { buildings: newBuildings },
     });
 
+    logger.success(newResources, newResourceCaps);
     res.json({ success: true, state: stateDTO } as TransactionResponse);
   } catch (error) {
     console.error('Error purchasing bulk buildings:', error);

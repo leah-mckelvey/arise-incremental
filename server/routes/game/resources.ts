@@ -1,15 +1,12 @@
 import { Router } from 'express';
-import { randomUUID } from 'crypto';
 import { eq } from 'drizzle-orm';
-import { gameStates, transactions } from '../../db/schema.js';
-import { queryClient } from '../../db/cache.js';
+import { gameStates } from '../../db/schema.js';
 import { type AuthRequest } from '../../middleware/auth.js';
 import { processXpGain, calculateGatherXp } from '../../lib/gameLogic.js';
 import { createTransactionLogger } from '../../lib/debugLogger.js';
 import type {
   GatherResourceRequest,
   TransactionResponse,
-  GameStateDTO,
   Resources,
 } from '../../../shared/types.js';
 import {
@@ -18,8 +15,8 @@ import {
   extractResources,
   extractResourceCaps,
   extractHunterStats,
-  transformToGameStateDTO,
   applyPassiveIncomeToGameState,
+  commitTransaction,
 } from './utils/index.js';
 
 export const resourcesRouter = Router();
@@ -111,66 +108,28 @@ resourcesRouter.post('/gather-resource', async (req: AuthRequest, res) => {
       newHunter = result.hunter;
     }
 
-    const now = new Date();
-    await db
-      .update(gameStates)
-      .set({
-        essence: newResources.essence,
-        crystals: newResources.crystals,
-        gold: newResources.gold,
-        souls: newResources.souls,
-        attraction: newResources.attraction,
-        gems: newResources.gems,
-        knowledge: newResources.knowledge,
-        essenceCap: dynamicCaps.essence,
-        crystalsCap: dynamicCaps.crystals,
-        goldCap: dynamicCaps.gold,
-        soulsCap: dynamicCaps.souls,
-        attractionCap: dynamicCaps.attraction,
-        gemsCap: dynamicCaps.gems,
-        knowledgeCap: dynamicCaps.knowledge,
+    const stateDTO = await commitTransaction({
+      userId,
+      clientTxId,
+      gameState,
+      resources: newResources,
+      resourceCaps: dynamicCaps,
+      dbUpdates: {
         hunterXp: newHunter.xp,
         hunterLevel: newHunter.level,
         hunterXpToNextLevel: newHunter.xpToNextLevel,
-        hunterRank: newHunter.rank,
         hunterStatPoints: newHunter.statPoints,
         hunterHp: newHunter.hp,
         hunterMaxHp: newHunter.maxHp,
         hunterMana: newHunter.mana,
         hunterMaxMana: newHunter.maxMana,
-        lastUpdate: now,
-        updatedAt: now,
-      })
-      .where(eq(gameStates.id, gameState.id));
-
-    // Invalidate cache
-    await queryClient.invalidateQueries(['gameState', userId]);
-
-    // Transform to DTO
-    const stateDTO: GameStateDTO = transformToGameStateDTO(gameState, newResources, dynamicCaps, {
-      hunter: newHunter,
-      lastUpdate: now.getTime(),
+      },
+      transaction: { type: 'gather-resource', payload: { resource, amount } },
+      overrides: { hunter: newHunter },
     });
 
-    // Log success
     logger.success(newResources, dynamicCaps);
-
-    // Log transaction
-    await db.insert(transactions).values({
-      id: randomUUID(),
-      userId,
-      clientTxId,
-      type: 'gather-resource',
-      payload: { resource, amount },
-      stateAfter: stateDTO,
-    });
-
-    const response: TransactionResponse = {
-      success: true,
-      state: stateDTO,
-    };
-
-    res.json(response);
+    res.json({ success: true, state: stateDTO } as TransactionResponse);
   } catch (error) {
     console.error('Error gathering resource:', error);
     res.status(500).json({ error: 'Failed to gather resource' });

@@ -1,21 +1,15 @@
 import { Router } from 'express';
-import { randomUUID } from 'crypto';
 import { eq } from 'drizzle-orm';
-import { gameStates, transactions } from '../../db/schema.js';
-import { queryClient } from '../../db/cache.js';
+import { gameStates } from '../../db/schema.js';
 import { type AuthRequest } from '../../middleware/auth.js';
 import { allocateStat } from '../../lib/gameLogic.js';
-import type {
-  AllocateStatRequest,
-  TransactionResponse,
-  GameStateDTO,
-} from '../../../shared/types.js';
+import type { AllocateStatRequest, TransactionResponse } from '../../../shared/types.js';
 import {
   getDb,
   checkIdempotency,
   applyPassiveIncomeToGameState,
   extractResourceCaps,
-  transformToGameStateDTO,
+  commitTransaction,
 } from './utils/index.js';
 
 export const hunterRouter = Router();
@@ -86,19 +80,15 @@ hunterRouter.post('/allocate-stat', async (req: AuthRequest, res) => {
 
     // Apply passive income (even though this mutation doesn't consume resources)
     const { resources: currentResources } = applyPassiveIncomeToGameState(gameState);
+    const resourceCaps = extractResourceCaps(gameState);
 
-    // Update database
-    const now = new Date();
-    await db
-      .update(gameStates)
-      .set({
-        essence: currentResources.essence,
-        crystals: currentResources.crystals,
-        gold: currentResources.gold,
-        souls: currentResources.souls,
-        attraction: currentResources.attraction,
-        gems: currentResources.gems,
-        knowledge: currentResources.knowledge,
+    const stateDTO = await commitTransaction({
+      userId,
+      clientTxId,
+      gameState,
+      resources: currentResources,
+      resourceCaps,
+      dbUpdates: {
         hunterStatPoints: newHunter.statPoints,
         hunterMaxHp: newHunter.maxHp,
         hunterMaxMana: newHunter.maxMana,
@@ -108,28 +98,9 @@ hunterRouter.post('/allocate-stat', async (req: AuthRequest, res) => {
         hunterVitality: newHunter.stats.vitality,
         hunterSense: newHunter.stats.sense,
         hunterAuthority: newHunter.stats.authority,
-        lastUpdate: now,
-        updatedAt: now,
-      })
-      .where(eq(gameStates.id, gameState.id));
-
-    await queryClient.invalidateQueries(['gameState', userId]);
-
-    const resourceCaps = extractResourceCaps(gameState);
-    const stateDTO: GameStateDTO = transformToGameStateDTO(
-      gameState,
-      currentResources,
-      resourceCaps,
-      { hunter: newHunter, lastUpdate: now.getTime() }
-    );
-
-    await db.insert(transactions).values({
-      id: randomUUID(),
-      userId,
-      clientTxId,
-      type: 'allocate_stat',
-      payload: { stat },
-      stateAfter: stateDTO,
+      },
+      transaction: { type: 'allocate_stat', payload: { stat } },
+      overrides: { hunter: newHunter },
     });
 
     res.json({ success: true, state: stateDTO } as TransactionResponse);

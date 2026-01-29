@@ -325,3 +325,76 @@ export interface ExtractShadowRequest {
 export interface ResetGameRequest {
   clientTxId: string;
 }
+
+// ============================================================================
+// Transaction Payload Types - Discriminated Union for Type Safety
+// ============================================================================
+
+/**
+ * Individual transaction payload types for each transaction kind
+ */
+export interface AllocateStatPayload {
+  stat: string;
+}
+
+export interface RecruitAllyPayload {
+  name: string;
+  rank: string;
+  cost: number;
+}
+
+export interface ExtractShadowPayload {
+  name: string;
+  dungeonId: string;
+  cost: number;
+}
+
+export interface PurchaseResearchPayload {
+  researchId: string;
+  cost: number;
+}
+
+export interface PurchaseBuildingPayload {
+  buildingId: string;
+  cost: Resources;
+  quantity: number;
+}
+
+export interface StartDungeonPayload {
+  dungeonId: string;
+  partyIds: string[];
+}
+
+export interface CompleteDungeonPayload {
+  activeDungeonId: string;
+  rewards: DungeonRewards;
+}
+
+export interface CancelDungeonPayload {
+  activeDungeonId: string;
+}
+
+export interface GatherResourcePayload {
+  resource: string;
+  amount: number;
+}
+
+// Empty object type for reset
+export type ResetPayload = Record<string, never>;
+
+/**
+ * Discriminated union of all transaction types and their payloads.
+ * TypeScript will enforce that the payload matches the transaction type.
+ */
+export type TransactionData =
+  | { type: 'allocate_stat'; payload: AllocateStatPayload }
+  | { type: 'recruit_ally'; payload: RecruitAllyPayload }
+  | { type: 'extract_shadow'; payload: ExtractShadowPayload }
+  | { type: 'purchase_research'; payload: PurchaseResearchPayload }
+  | { type: 'purchase_building'; payload: PurchaseBuildingPayload }
+  | { type: 'purchase_bulk_building'; payload: PurchaseBuildingPayload }
+  | { type: 'start_dungeon'; payload: StartDungeonPayload }
+  | { type: 'complete_dungeon'; payload: CompleteDungeonPayload }
+  | { type: 'cancel_dungeon'; payload: CancelDungeonPayload }
+  | { type: 'gather-resource'; payload: GatherResourcePayload }
+  | { type: 'reset'; payload: ResetPayload };
