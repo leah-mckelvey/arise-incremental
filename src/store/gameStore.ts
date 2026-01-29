@@ -1114,7 +1114,7 @@ const completeDungeonWithApi = async (activeDungeonId: string) => {
               // Extract shadow (only if necromancer unlocked)
               const newShadow = useShadowsStore.getState().extractShadow(randomName, dungeon.id);
               console.log(`👻 Extracted shadow:`, newShadow);
-              if (newShadow.id) {
+              if (newShadow) {
                 useNotificationsStore
                   .getState()
                   .addNotification(
