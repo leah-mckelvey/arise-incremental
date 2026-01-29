@@ -11,7 +11,7 @@ export interface ShadowsState {
   necromancerUnlocked: boolean; // Unlocks at level 40
 
   // Actions
-  extractShadow: (name: string, dungeonId: string) => Shadow;
+  extractShadow: (name: string, dungeonId: string) => Shadow | null;
   addXpToShadow: (shadowId: string, xp: number, onLevelUp?: (newLevel: number) => void) => void;
   getShadowsForDungeon: (dungeonId: string) => Shadow[];
   unlockNecromancer: () => void;
@@ -64,7 +64,7 @@ export const useShadowsStore = createStore<ShadowsState>((set, get) => {
     extractShadow: (name, dungeonId) => {
       if (!get().necromancerUnlocked) {
         console.warn('Cannot extract shadows - Necromancer not unlocked');
-        return {} as Shadow;
+        return null;
       }
 
       // Check if this shadow already exists (by name)
