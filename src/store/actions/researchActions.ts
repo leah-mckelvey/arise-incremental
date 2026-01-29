@@ -3,31 +3,16 @@
  * Handles purchasing research with optimistic updates
  */
 
-import { gameStore } from '../gameStore';
+import { gameStore, createResources } from '../gameStore';
 import { useBuildingsStore } from '../buildingsStore';
 import { useResearchStore } from '../researchStore';
 import { useHunterStore } from '../hunterStore';
 import { useNotificationsStore } from '../notificationsStore';
-import type { Resources } from '../types';
 import { calculateResourceCaps } from '../../lib/calculations/resourceCalculations';
 import { baseResourceCaps } from '../../data/initialHunter';
 import * as gameApi from '../../api/gameApi';
 import { syncServerState } from './syncActions';
 import { getEffectiveHunterStats } from './hunterActions';
-
-// Helper to create full Resources object with defaults
-const createResources = (partial: Partial<Resources> = {}): Resources => {
-  return {
-    essence: 0,
-    crystals: 0,
-    gold: 0,
-    souls: 0,
-    attraction: 0,
-    gems: 0,
-    knowledge: 0,
-    ...partial,
-  };
-};
 
 export const purchaseResearch = async (researchId: string) => {
   const buildings = useBuildingsStore.getState().buildings;
@@ -61,6 +46,13 @@ export const purchaseResearch = async (researchId: string) => {
       });
     }
   );
+
+  // Check if the purchase actually happened (researchStore validates prereqs/knowledge)
+  const currentResearch = useResearchStore.getState().research;
+  if (currentResearch === previousResearch) {
+    // No change - validation failed (already researched, missing prereqs, or insufficient knowledge)
+    return;
+  }
 
   // Track pending mutation
   gameStore.setState((s) => ({ pendingMutations: s.pendingMutations + 1 }));

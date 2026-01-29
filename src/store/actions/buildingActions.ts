@@ -115,6 +115,13 @@ export const purchaseBuildingBulk = async (buildingId: string, quantity: number)
     }
   );
 
+  // Check if the purchase actually happened (buildingsStore validates resources)
+  const currentBuildings = useBuildingsStore.getState().buildings;
+  if (currentBuildings === previousBuildings) {
+    // No change - validation failed (insufficient resources or invalid building)
+    return;
+  }
+
   // Track pending mutation
   gameStore.setState((s) => ({ pendingMutations: s.pendingMutations + 1 }));
 

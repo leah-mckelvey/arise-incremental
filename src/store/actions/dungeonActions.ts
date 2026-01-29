@@ -27,6 +27,13 @@ export const startDungeon = async (dungeonId: string, partyIds: string[] = []) =
     console.log('🏰 Dungeon started successfully');
   });
 
+  // Check if the dungeon actually started (dungeonsStore validates locked/busy companions)
+  const currentActiveDungeons = useDungeonsStore.getState().activeDungeons;
+  if (currentActiveDungeons === previousActiveDungeons) {
+    // No change - validation failed (dungeon locked or companions busy)
+    return;
+  }
+
   // Track pending mutation
   gameStore.setState((s) => ({ pendingMutations: s.pendingMutations + 1 }));
 
@@ -129,9 +136,16 @@ const completeDungeonWithApi = async (activeDungeonId: string) => {
   }
 
   // Store previous state for rollback
+  // processRewards can modify: resources, resourceCaps (via handleLevelUp), hunter,
+  // dungeon unlocks, necromancer unlock, allies (XP + drops), shadows (XP + drops)
   const previousActiveDungeons = useDungeonsStore.getState().activeDungeons;
+  const previousDungeons = useDungeonsStore.getState().dungeons;
   const previousResources = gameStore.getState().resources;
+  const previousResourceCaps = gameStore.getState().resourceCaps;
   const previousHunter = useHunterStore.getState().hunter;
+  const previousNecromancerUnlocked = useShadowsStore.getState().necromancerUnlocked;
+  const previousAllies = useAlliesStore.getState().allies;
+  const previousShadows = useShadowsStore.getState().shadows;
 
   // Optimistic update - remove dungeon from active list locally
   useDungeonsStore
@@ -150,7 +164,8 @@ const completeDungeonWithApi = async (activeDungeonId: string) => {
 
           if (companion) {
             // Companion effectiveness = their level / hunter level
-            const effectiveness = companion.level / hunterLevel;
+            // Guard against division by zero (hunterLevel should always be >= 1)
+            const effectiveness = hunterLevel > 0 ? companion.level / hunterLevel : 0;
             companionEffectiveness += effectiveness;
           }
         });
@@ -170,10 +185,23 @@ const completeDungeonWithApi = async (activeDungeonId: string) => {
     syncServerState(response.state);
     console.log('✅ Dungeon completion synced with server');
   } catch (error) {
-    // Rollback on error - restore previous state
-    useDungeonsStore.setState({ activeDungeons: previousActiveDungeons });
-    gameStore.setState({ resources: previousResources });
+    // Rollback on error - restore ALL previous state
+    // processRewards may have modified: resources, resourceCaps, hunter,
+    // dungeon unlocks, necromancer unlock, allies, shadows
+    useDungeonsStore.setState({
+      activeDungeons: previousActiveDungeons,
+      dungeons: previousDungeons,
+    });
+    gameStore.setState({
+      resources: previousResources,
+      resourceCaps: previousResourceCaps,
+    });
     useHunterStore.setState({ hunter: previousHunter });
+    useShadowsStore.setState({
+      necromancerUnlocked: previousNecromancerUnlocked,
+      shadows: previousShadows,
+    });
+    useAlliesStore.setState({ allies: previousAllies });
     console.error('Failed to complete dungeon on server:', error);
     useNotificationsStore
       .getState()

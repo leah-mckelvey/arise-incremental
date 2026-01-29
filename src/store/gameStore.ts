@@ -24,6 +24,31 @@ import { baseResourceCaps } from '../data/initialHunter';
 import { runMigrations, getCurrentVersion } from '../lib/migrations';
 import * as gameApi from '../api/gameApi';
 
+// Import action functions from action modules
+// These must be imported before gameStore creation since they're used in the store factory
+import {
+  getEffectiveHunterStats,
+  handleLevelUp,
+  checkDungeonUnlocks,
+  checkNecromancerUnlock,
+  allocateStat,
+} from './actions/hunterActions';
+import { syncServerState } from './actions/syncActions';
+import { purchaseBuilding, purchaseBuildingBulk } from './actions/buildingActions';
+import { purchaseResearch } from './actions/researchActions';
+import {
+  craftArtifact,
+  craftArtifactBulk,
+  equipArtifact,
+  unequipArtifact,
+  upgradeArtifact,
+  upgradeArtifactBulk,
+  destroyArtifact,
+  destroyArtifactsUnderRank,
+} from './actions/artifactActions';
+import { startDungeon, cancelDungeon, checkDungeonCompletion } from './actions/dungeonActions';
+import { recruitGenericAlly, extractShadowManual } from './actions/companionActions';
+
 // Main game state (resources, caps, tick)
 export interface GameState {
   version: number;
@@ -401,31 +426,6 @@ export const gameStore = createStore<GameState>((set, get) => {
 gameStore.subscribe((state) => {
   persistState(state);
 });
-
-// Import action functions from action modules
-// These are re-exported below for backwards compatibility
-import {
-  getEffectiveHunterStats,
-  handleLevelUp,
-  checkDungeonUnlocks,
-  checkNecromancerUnlock,
-  allocateStat,
-} from './actions/hunterActions';
-import { syncServerState } from './actions/syncActions';
-import { purchaseBuilding, purchaseBuildingBulk } from './actions/buildingActions';
-import { purchaseResearch } from './actions/researchActions';
-import {
-  craftArtifact,
-  craftArtifactBulk,
-  equipArtifact,
-  unequipArtifact,
-  upgradeArtifact,
-  upgradeArtifactBulk,
-  destroyArtifact,
-  destroyArtifactsUnderRank,
-} from './actions/artifactActions';
-import { startDungeon, cancelDungeon, checkDungeonCompletion } from './actions/dungeonActions';
-import { recruitGenericAlly, extractShadowManual } from './actions/companionActions';
 
 // Initialize game systems after all stores are loaded
 // Call this from App.tsx or main.tsx after imports

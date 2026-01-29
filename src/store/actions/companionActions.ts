@@ -11,6 +11,22 @@ import * as gameApi from '../../api/gameApi';
 import { syncServerState } from './syncActions';
 
 export const recruitGenericAlly = async (name: string, rank: string, attractionCost: number) => {
+  // Validate affordability before optimistic update
+  // addResource clamps at 0, so we must check explicitly
+  const currentAttraction = gameStore.getState().resources.attraction;
+  if (currentAttraction < attractionCost) {
+    useNotificationsStore
+      .getState()
+      .addNotification(
+        'error',
+        'Insufficient Attraction',
+        'Not enough attraction to recruit this ally.',
+        undefined,
+        5000
+      );
+    return;
+  }
+
   // Store previous state for rollback
   const previousResources = gameStore.getState().resources;
   const previousAllies = useAlliesStore.getState().allies;
@@ -55,6 +71,22 @@ export const extractShadowManual = async (name: string, dungeonId: string, souls
         'error',
         'Extraction Failed',
         'Necromancer ability is not unlocked.',
+        undefined,
+        5000
+      );
+    return;
+  }
+
+  // Validate affordability before optimistic update
+  // addResource clamps at 0, so we must check explicitly
+  const currentSouls = gameStore.getState().resources.souls;
+  if (currentSouls < soulsCost) {
+    useNotificationsStore
+      .getState()
+      .addNotification(
+        'error',
+        'Insufficient Souls',
+        'Not enough souls to extract this shadow.',
         undefined,
         5000
       );

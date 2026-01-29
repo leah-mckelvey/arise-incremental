@@ -12,6 +12,7 @@ import { useDungeonsStore } from '../dungeonsStore';
 import { useAlliesStore } from '../alliesStore';
 import { useShadowsStore } from '../shadowsStore';
 import type { GameStateDTO } from '../../../shared/types';
+import { calculateBlacksmithXpToNextLevel } from '../../lib/calculations/artifactCalculations';
 
 /**
  * Helper to sync server state after a successful mutation
@@ -53,6 +54,10 @@ export const syncServerState = (serverState: Partial<GameStateDTO>) => {
       inventory: serverState.artifacts.inventory,
       blacksmithLevel: serverState.artifacts.blacksmithLevel,
       blacksmithXp: serverState.artifacts.blacksmithXp,
+      // Recalculate derived state from level to prevent stale blacksmithXpToNextLevel
+      blacksmithXpToNextLevel: calculateBlacksmithXpToNextLevel(
+        serverState.artifacts.blacksmithLevel
+      ),
     });
   }
   if (serverState.dungeons || serverState.activeDungeons) {
