@@ -1237,7 +1237,13 @@ export const extractShadowManual = async (name: string, dungeonId: string, souls
   if (!useShadowsStore.getState().necromancerUnlocked) {
     useNotificationsStore
       .getState()
-      .addNotification('error', 'Extraction Failed', 'Necromancer ability is not unlocked.', undefined, 5000);
+      .addNotification(
+        'error',
+        'Extraction Failed',
+        'Necromancer ability is not unlocked.',
+        undefined,
+        5000
+      );
     return;
   }
 
