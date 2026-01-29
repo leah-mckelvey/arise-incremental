@@ -45,4 +45,3 @@ export const OwnedBadge = ({ count }: OwnedBadgeProps) => {
     </Box>
   );
 };
-

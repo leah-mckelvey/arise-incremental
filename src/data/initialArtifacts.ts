@@ -3,7 +3,10 @@ import type { ArtifactUpgrade, EquippedArtifacts } from '../store/types';
 /**
  * Available upgrade types for artifacts (COD-style incremental improvements)
  */
-export const availableUpgrades: Record<string, Omit<ArtifactUpgrade, 'cost' | 'blacksmithXpCost'>> = {
+export const availableUpgrades: Record<
+  string,
+  Omit<ArtifactUpgrade, 'cost' | 'blacksmithXpCost'>
+> = {
   sharpenBlade: {
     id: 'sharpenBlade',
     name: '🔪 Sharpen Blade',
@@ -83,7 +86,10 @@ export const calculateUpgradeCost = (artifactRank: string, upgradeCount: number)
 /**
  * Calculate blacksmith XP cost for upgrade
  */
-export const calculateUpgradeBlacksmithXpCost = (artifactRank: string, upgradeCount: number): number => {
+export const calculateUpgradeBlacksmithXpCost = (
+  artifactRank: string,
+  upgradeCount: number
+): number => {
   const rankMultipliers: Record<string, number> = {
     E: 10,
     D: 25,
@@ -120,18 +126,18 @@ export const artifactNameTemplates: Record<string, Record<string, string>> = {
   weapon: {
     E: '🗡️ Iron Dagger',
     D: '⚔️ Steel Sword',
-    C: '🔪 Knight\'s Blade',
+    C: "🔪 Knight's Blade",
     B: '⚡ Lightning Sword',
     A: '🔥 Demon Slayer',
-    S: '💀 Baruka\'s Dagger',
+    S: "💀 Baruka's Dagger",
   },
   head: {
     E: '🪖 Leather Cap',
     D: '⛑️ Iron Helmet',
-    C: '👑 Knight\'s Helm',
+    C: "👑 Knight's Helm",
     B: '💎 Crystal Crown',
     A: '✨ Mana Circlet',
-    S: '👹 Shadow Monarch\'s Crown',
+    S: "👹 Shadow Monarch's Crown",
   },
   chest: {
     E: '👕 Cloth Armor',
@@ -139,7 +145,7 @@ export const artifactNameTemplates: Record<string, Record<string, string>> = {
     C: '🛡️ Plate Armor',
     B: '⚡ Lightning Plate',
     A: '🔥 Dragon Scale Armor',
-    S: '👻 Shadow Monarch\'s Armor',
+    S: "👻 Shadow Monarch's Armor",
   },
   hands: {
     E: '🧤 Cloth Gloves',
@@ -147,7 +153,7 @@ export const artifactNameTemplates: Record<string, Record<string, string>> = {
     C: '⚔️ Gauntlets',
     B: '💎 Crystal Gauntlets',
     A: '⚡ Thunder Gauntlets',
-    S: '👹 Shadow Monarch\'s Gauntlets',
+    S: "👹 Shadow Monarch's Gauntlets",
   },
   legs: {
     E: '👖 Cloth Pants',
@@ -155,7 +161,7 @@ export const artifactNameTemplates: Record<string, Record<string, string>> = {
     C: '🛡️ Plate Leggings',
     B: '💎 Crystal Greaves',
     A: '⚡ Thunder Greaves',
-    S: '👻 Shadow Monarch\'s Greaves',
+    S: "👻 Shadow Monarch's Greaves",
   },
   feet: {
     E: '👟 Cloth Boots',
@@ -163,7 +169,6 @@ export const artifactNameTemplates: Record<string, Record<string, string>> = {
     C: '⚔️ Steel Boots',
     B: '💨 Wind Boots',
     A: '⚡ Lightning Boots',
-    S: '👹 Shadow Monarch\'s Boots',
+    S: "👹 Shadow Monarch's Boots",
   },
 };
-

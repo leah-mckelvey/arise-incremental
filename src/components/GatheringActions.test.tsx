@@ -68,4 +68,3 @@ describe('GatheringActions', () => {
     expect(gameStore.getState().resources.essence).toBeGreaterThan(3);
   });
 });
-

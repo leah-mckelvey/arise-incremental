@@ -212,4 +212,3 @@ export const initialDungeons: Dungeon[] = [
     companionNames: ['Goto Ryuji', 'Lennart Niermann', 'Jonas', 'Hwang Dongsoo'],
   },
 ];
-

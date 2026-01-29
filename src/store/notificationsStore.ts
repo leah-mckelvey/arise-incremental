@@ -6,7 +6,7 @@ let notificationIdCounter = 0;
 
 export interface NotificationsState {
   notifications: Notification[];
-  
+
   // Actions
   addNotification: (
     type: NotificationType,
@@ -58,4 +58,3 @@ export const useNotificationsStore = createStore<NotificationsState>((set, get) 
 
   return store;
 });
-

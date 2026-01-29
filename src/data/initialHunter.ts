@@ -30,4 +30,3 @@ export const baseResourceCaps: ResourceCaps = {
   gems: 10,
   knowledge: 100,
 };
-

@@ -7,7 +7,7 @@ export interface HunterState {
   hunter: Hunter;
   addXp: (amount: number, onLevelUp?: (newLevel: number) => void) => void;
   allocateStat: (stat: keyof HunterStats) => void;
-  getEffectiveStats: () => HunterStats;  // Base stats + artifact bonuses
+  getEffectiveStats: () => HunterStats; // Base stats + artifact bonuses
   reset: () => void;
 }
 
@@ -92,3 +92,7 @@ export const useHunterStore = createStore<HunterState>((set) => {
   return store;
 });
 
+// Subscribe to persist state changes
+useHunterStore.subscribe((state) => {
+  persistState(state);
+});

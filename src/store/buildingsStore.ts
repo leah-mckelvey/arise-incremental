@@ -20,12 +20,19 @@ export interface Building {
 
 export interface BuildingsState {
   buildings: Record<string, Building>;
-  purchaseBuilding: (buildingId: string, getResources: () => Resources, onSuccess: (cost: Resources, newBuildings: Record<string, Building>) => void) => void;
-  purchaseBuildingBulk: (buildingId: string, quantity: number, getResources: () => Resources, onSuccess: (cost: Resources, newBuildings: Record<string, Building>) => void) => void;
+  purchaseBuilding: (
+    buildingId: string,
+    getResources: () => Resources,
+    onSuccess: (cost: Resources, newBuildings: Record<string, Building>) => void
+  ) => void;
+  purchaseBuildingBulk: (
+    buildingId: string,
+    quantity: number,
+    getResources: () => Resources,
+    onSuccess: (cost: Resources, newBuildings: Record<string, Building>) => void
+  ) => void;
   reset: () => void;
 }
-
-
 
 const STORAGE_KEY = 'arise-buildings-storage';
 
@@ -119,6 +126,10 @@ export const useBuildingsStore = createStore<BuildingsState>((set, get) => {
   return store;
 });
 
+// Subscribe to persist state changes
+useBuildingsStore.subscribe((state) => {
+  persistState(state);
+});
+
 // Export helper functions
 export { calculateBuildingCost as getBuildingCost, canAffordCost as canAffordBuilding };
-

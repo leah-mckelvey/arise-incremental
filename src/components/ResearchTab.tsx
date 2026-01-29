@@ -65,13 +65,11 @@ export const ResearchTab = () => {
                 border: researched
                   ? '2px solid var(--success)'
                   : canAfford
-                  ? '2px solid var(--accent-teal)'
-                  : locked
-                  ? '2px solid var(--text-dim)'
-                  : '2px solid var(--border-color)',
-                boxShadow: canAfford && !researched
-                  ? '0 0 15px var(--border-glow)'
-                  : 'none',
+                    ? '2px solid var(--accent-teal)'
+                    : locked
+                      ? '2px solid var(--text-dim)'
+                      : '2px solid var(--border-color)',
+                boxShadow: canAfford && !researched ? '0 0 15px var(--border-glow)' : 'none',
                 opacity: locked ? 0.5 : 1,
               }}
             >
@@ -100,7 +98,9 @@ export const ResearchTab = () => {
                     style={{
                       background: canAfford ? 'var(--accent-teal)' : 'var(--bg-tertiary)',
                       color: canAfford ? '#000' : 'var(--text-dim)',
-                      border: canAfford ? '1px solid var(--accent-teal)' : '1px solid var(--border-color)',
+                      border: canAfford
+                        ? '1px solid var(--accent-teal)'
+                        : '1px solid var(--border-color)',
                       fontWeight: 'bold',
                     }}
                   >
@@ -127,7 +127,8 @@ export const ResearchTab = () => {
 
                 {tech.requires && tech.requires.length > 0 && (
                   <Text fontSize="13px" style={{ color: 'var(--text-dim)' }}>
-                    <strong>Requires:</strong> {tech.requires.map(id => research[id]?.name).join(', ')}
+                    <strong>Requires:</strong>{' '}
+                    {tech.requires.map((id) => research[id]?.name).join(', ')}
                   </Text>
                 )}
               </Box>
@@ -138,4 +139,3 @@ export const ResearchTab = () => {
     </Box>
   );
 };
-

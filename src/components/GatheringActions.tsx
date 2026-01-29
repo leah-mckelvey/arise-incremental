@@ -41,7 +41,13 @@ export const GatheringActions = () => {
       <Heading level={3} style={{ marginBottom: '15px', color: 'var(--accent-teal)' }}>
         ⚒️ Hunt & Gather
       </Heading>
-      <Box style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+      <Box
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: '10px',
+        }}
+      >
         <Box>
           <Button
             onClick={() => gatherResource('essence')}
@@ -56,7 +62,9 @@ export const GatheringActions = () => {
           >
             🔮 Gather Essence
             <br />
-            <span style={{ fontSize: '12px', opacity: 0.9 }}>+{essenceAmount} | +{essenceXp} XP</span>
+            <span style={{ fontSize: '12px', opacity: 0.9 }}>
+              +{essenceAmount} | +{essenceXp} XP
+            </span>
           </Button>
           <Text
             fontSize="11px"
@@ -84,7 +92,9 @@ export const GatheringActions = () => {
           >
             💎 Mine Crystals
             <br />
-            <span style={{ fontSize: '12px', opacity: 0.9 }}>+{crystalsAmount} | +{crystalsXp} XP</span>
+            <span style={{ fontSize: '12px', opacity: 0.9 }}>
+              +{crystalsAmount} | +{crystalsXp} XP
+            </span>
           </Button>
           <Text
             fontSize="11px"
@@ -112,7 +122,9 @@ export const GatheringActions = () => {
           >
             💰 Collect Gold
             <br />
-            <span style={{ fontSize: '12px', opacity: 0.9 }}>+{goldAmount} | +{goldXp} XP</span>
+            <span style={{ fontSize: '12px', opacity: 0.9 }}>
+              +{goldAmount} | +{goldXp} XP
+            </span>
           </Button>
           <Text
             fontSize="11px"

@@ -24,11 +24,14 @@ function GameContent() {
   // Get functions directly from the store
   const tick = gameStore.getState().tick;
   const reset = gameStore.getState().reset;
+  const syncWithServer = gameStore.getState().syncWithServer;
 
   // Initialize game systems on mount
   useEffect(() => {
     initializeGame();
-  }, []);
+    // Initial sync with server
+    syncWithServer();
+  }, [syncWithServer]);
 
   // Game loop
   useEffect(() => {
@@ -38,6 +41,34 @@ function GameContent() {
 
     return () => clearInterval(interval);
   }, [tick]);
+
+  // Sync on visibility change (when user returns to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // User returned to tab - sync to get offline gains
+        syncWithServer();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [syncWithServer]);
+
+  // Periodic sync every 5 minutes (for offline gains, respects pending mutations)
+  useEffect(() => {
+    const syncInterval = setInterval(
+      () => {
+        // Only sync if tab is visible (don't waste resources in background)
+        if (document.visibilityState === 'visible') {
+          syncWithServer(); // Will skip if mutations are in flight
+        }
+      },
+      5 * 60 * 1000
+    ); // 5 minutes
+
+    return () => clearInterval(syncInterval);
+  }, [syncWithServer]);
 
   const renderTabContent = () => {
     switch (activeTab) {

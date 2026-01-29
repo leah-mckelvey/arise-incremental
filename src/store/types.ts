@@ -1,19 +1,19 @@
 // Game resource types
 export interface Resources {
   // Basic resources (E-rank)
-  essence: number;      // 🔮 Basic dungeon resource
-  crystals: number;     // 💎 Mid-tier resource
-  gold: number;         // 💰 In-game currency
+  essence: number; // 🔮 Basic dungeon resource
+  crystals: number; // 💎 Mid-tier resource
+  gold: number; // 💰 In-game currency
 
   // Advanced resources (Post-class change)
-  souls: number;        // 👻 For shadow upgrades
-  attraction: number;   // ⭐ For recruiting allies
+  souls: number; // 👻 For shadow upgrades
+  attraction: number; // ⭐ For recruiting allies
 
   // Premium currency
-  gems: number;         // 💠 Premium currency
-  
+  gems: number; // 💠 Premium currency
+
   // Research currency
-  knowledge: number;    // 📚 For research/tech tree
+  knowledge: number; // 📚 For research/tech tree
 }
 
 // Resource caps/storage limits
@@ -142,7 +142,7 @@ export type ArtifactSlot =
   | 'ring2';
 
 export interface ArtifactStatBonus {
-  strength?: number;      // Percentage bonus (e.g., 5 = +5%)
+  strength?: number; // Percentage bonus (e.g., 5 = +5%)
   agility?: number;
   intelligence?: number;
   vitality?: number;
@@ -163,11 +163,11 @@ export interface Artifact {
   name: string;
   description: string;
   rank: ArtifactRank;
-  tier: ArtifactTier;               // Loot tier (Common → Legendary)
+  tier: ArtifactTier; // Loot tier (Common → Legendary)
   slot: ArtifactSlot;
   baseStats: ArtifactStatBonus;
-  upgrades: ArtifactUpgrade[];      // Applied upgrades
-  maxUpgrades: number;              // Max upgrade slots (increases with tier)
+  upgrades: ArtifactUpgrade[]; // Applied upgrades
+  maxUpgrades: number; // Max upgrade slots (increases with tier)
   craftCost: Resources;
 }
 
@@ -184,4 +184,3 @@ export interface EquippedArtifacts {
   ring1?: Artifact;
   ring2?: Artifact;
 }
-

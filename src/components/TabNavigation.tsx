@@ -1,6 +1,13 @@
 import { Box, Button } from '@ts-query/ui-react';
 
-export type TabId = 'hunter' | 'buildings' | 'research' | 'artifacts' | 'dungeons' | 'allies' | 'shadows';
+export type TabId =
+  | 'hunter'
+  | 'buildings'
+  | 'research'
+  | 'artifacts'
+  | 'dungeons'
+  | 'allies'
+  | 'shadows';
 
 export interface Tab {
   id: TabId;
@@ -48,9 +55,7 @@ export const TabNavigation = ({ activeTab, onTabChange }: TabNavigationProps) =>
             style={{
               background: isActive ? 'var(--accent-teal)' : 'var(--bg-tertiary)',
               color: isActive ? '#000' : 'var(--text-primary)',
-              border: isActive
-                ? '2px solid var(--accent-teal)'
-                : '2px solid var(--border-color)',
+              border: isActive ? '2px solid var(--accent-teal)' : '2px solid var(--border-color)',
               fontWeight: 'bold',
               fontSize: '16px',
               padding: '12px 20px',
@@ -66,4 +71,3 @@ export const TabNavigation = ({ activeTab, onTabChange }: TabNavigationProps) =>
     </Box>
   );
 };
-

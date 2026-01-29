@@ -27,7 +27,11 @@ export interface Research {
 
 export interface ResearchState {
   research: Record<string, Research>;
-  purchaseResearch: (researchId: string, getKnowledge: () => number, onSuccess: (cost: number, newResearch: Record<string, Research>) => void) => void;
+  purchaseResearch: (
+    researchId: string,
+    getKnowledge: () => number,
+    onSuccess: (cost: number, newResearch: Record<string, Research>) => void
+  ) => void;
   reset: () => void;
 }
 
@@ -76,9 +80,7 @@ export const useResearchStore = createStore<ResearchState>((set, get) => {
 
       // Check prerequisites
       if (research.requires) {
-        const hasPrereqs = research.requires.every(
-          (reqId) => get().research[reqId]?.researched
-        );
+        const hasPrereqs = research.requires.every((reqId) => get().research[reqId]?.researched);
         if (!hasPrereqs) return;
       }
 
@@ -107,3 +109,7 @@ export const useResearchStore = createStore<ResearchState>((set, get) => {
   return store;
 });
 
+// Subscribe to persist state changes
+useResearchStore.subscribe((state) => {
+  persistState(state);
+});

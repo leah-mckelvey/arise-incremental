@@ -53,12 +53,12 @@ const migrateV1toV2 = (data: StorageData): StorageData => {
  */
 const migrateV2toV3 = (data: StorageData): StorageData => {
   console.log('🔄 Migrating from v2 to v3 (adding artifacts system)...');
-  
+
   // V3 adds artifacts system
   // Initialize artifacts store if it doesn't exist
   const artifactsKey = 'arise-artifacts-state';
   const artifactsData = localStorage.getItem(artifactsKey);
-  
+
   if (!artifactsData) {
     const initialArtifactsState = {
       equipped: {},
@@ -70,11 +70,11 @@ const migrateV2toV3 = (data: StorageData): StorageData => {
     localStorage.setItem(artifactsKey, JSON.stringify(initialArtifactsState));
     console.log('✅ Initialized artifacts system');
   }
-  
+
   // Add merchantGuild to buildings
   const buildingsKey = 'arise-buildings-storage';
   const buildingsData = localStorage.getItem(buildingsKey);
-  
+
   if (buildingsData) {
     try {
       const parsed = JSON.parse(buildingsData);
@@ -87,7 +87,7 @@ const migrateV2toV3 = (data: StorageData): StorageData => {
       console.error('Failed to migrate buildings:', error);
     }
   }
-  
+
   return { ...data, version: 3 };
 };
 
@@ -98,23 +98,23 @@ export const runMigrations = (): void => {
   try {
     const gameKey = 'arise-game-storage';
     const stored = localStorage.getItem(gameKey);
-    
+
     if (!stored) {
       // New player, no migration needed
       console.log('🆕 New player detected, no migration needed');
       return;
     }
-    
+
     let data: StorageData = JSON.parse(stored);
     const currentVersion = data.version || 1;
-    
+
     if (currentVersion === CURRENT_VERSION) {
       console.log(`✅ Already on latest version (v${CURRENT_VERSION})`);
       return;
     }
-    
+
     console.log(`🔄 Migrating from v${currentVersion} to v${CURRENT_VERSION}...`);
-    
+
     // Run migrations in sequence
     if (currentVersion < 2) {
       data = migrateV1toV2(data);
@@ -122,11 +122,10 @@ export const runMigrations = (): void => {
     if (currentVersion < 3) {
       data = migrateV2toV3(data);
     }
-    
+
     // Save migrated data
     localStorage.setItem(gameKey, JSON.stringify(data));
     console.log(`✅ Migration complete! Now on v${CURRENT_VERSION}`);
-    
   } catch (error) {
     console.error('❌ Migration failed:', error);
     console.warn('⚠️ You may need to reset your save if issues persist');
@@ -139,4 +138,3 @@ export const runMigrations = (): void => {
 export const getCurrentVersion = (): number => {
   return CURRENT_VERSION;
 };
-

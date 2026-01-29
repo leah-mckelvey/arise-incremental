@@ -82,10 +82,7 @@ export const processXpGain = (
 /**
  * Calculate stat allocation result
  */
-export const calculateStatAllocation = (
-  hunter: Hunter,
-  stat: keyof HunterStats
-): Hunter | null => {
+export const calculateStatAllocation = (hunter: Hunter, stat: keyof HunterStats): Hunter | null => {
   if (hunter.statPoints <= 0) return null;
 
   const newStats = {
@@ -106,4 +103,3 @@ export const calculateStatAllocation = (
     mana: stat === 'intelligence' ? newMaxMana : hunter.mana,
   };
 };
-

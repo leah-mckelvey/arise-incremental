@@ -56,6 +56,9 @@ jobs:
                     echo "⚠️  ts-query packages not found - skipping install"
                   fi
 
+            - name: Setup database
+              run: npm run db:push
+
             - name: Type check
               run: npm run typecheck
 
@@ -113,6 +116,9 @@ jobs:
                   else
                     echo "⚠️  ts-query packages not found - skipping install"
                   fi
+
+            - name: Setup database
+              run: npm run db:push
 
             - name: Run full validation
               run: npm run validate

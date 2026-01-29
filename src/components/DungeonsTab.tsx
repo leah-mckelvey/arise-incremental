@@ -129,12 +129,12 @@ export function DungeonsTab() {
   const handleStartDungeon = () => {
     if (selectedDungeon) {
       // Check if there's at least one named character in the party
-      const namedCompanionsInParty = selectedParty.filter(id => {
+      const namedCompanionsInParty = selectedParty.filter((id) => {
         if (selectedDungeon.type === 'alliance') {
-          const ally = allies.find(a => a.id === id);
+          const ally = allies.find((a) => a.id === id);
           return ally && ally.originDungeonId !== 'recruited';
         } else {
-          const shadow = shadows.find(s => s.id === id);
+          const shadow = shadows.find((s) => s.id === id);
           return shadow && shadow.originDungeonId !== 'recruited';
         }
       });
@@ -142,12 +142,16 @@ export function DungeonsTab() {
       // If no named companions selected and Sung Jinwoo is available, he goes
       // Otherwise, the selected named companions lead the party
       const isSungJinwooAvailable = !isSungJinwooBusy();
-      const finalParty = namedCompanionsInParty.length > 0
-        ? selectedParty
-        : (isSungJinwooAvailable ? ['sung-jinwoo', ...selectedParty] : selectedParty);
+      const finalParty =
+        namedCompanionsInParty.length > 0
+          ? selectedParty
+          : isSungJinwooAvailable
+            ? ['sung-jinwoo', ...selectedParty]
+            : selectedParty;
 
       // Validate that we have a valid leader (Sung Jinwoo or at least one named companion)
-      const hasValidLeader = finalParty.includes('sung-jinwoo') || namedCompanionsInParty.length > 0;
+      const hasValidLeader =
+        finalParty.includes('sung-jinwoo') || namedCompanionsInParty.length > 0;
       if (!hasValidLeader) {
         console.warn('Cannot start dungeon without a valid leader');
         return;
@@ -181,7 +185,9 @@ export function DungeonsTab() {
       >
         <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Box>
-            <Text style={{ fontSize: '18px', fontWeight: 'bold', color: getRankColor(dungeon.rank) }}>
+            <Text
+              style={{ fontSize: '18px', fontWeight: 'bold', color: getRankColor(dungeon.rank) }}
+            >
               {dungeon.name}
             </Text>
             <Text style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '5px' }}>
@@ -280,12 +286,23 @@ export function DungeonsTab() {
                   marginBottom: '10px',
                 }}
               >
-                <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <Box
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '10px',
+                  }}
+                >
                   <Box>
-                    <Text style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--accent-teal)' }}>
+                    <Text
+                      style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--accent-teal)' }}
+                    >
                       {dungeonData.name}
                     </Text>
-                    <Text style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px' }}>
+                    <Text
+                      style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px' }}
+                    >
                       Time Remaining: {getTimeRemaining(activeDungeon)}s
                       {activeDungeon.partyIds && activeDungeon.partyIds.length > 0 && (
                         <span>
@@ -294,8 +311,7 @@ export function DungeonsTab() {
                             ? activeDungeon.partyIds.length === 1
                               ? '⚔️ Sung Jinwoo (Solo)'
                               : `⚔️ Sung Jinwoo + ${activeDungeon.partyIds.length - 1} companion${activeDungeon.partyIds.length > 2 ? 's' : ''}`
-                            : `👥 ${activeDungeon.partyIds.length} companion${activeDungeon.partyIds.length > 1 ? 's' : ''}`
-                          }
+                            : `👥 ${activeDungeon.partyIds.length} companion${activeDungeon.partyIds.length > 1 ? 's' : ''}`}
                         </span>
                       )}
                     </Text>
@@ -418,50 +434,93 @@ export function DungeonsTab() {
                 marginBottom: '20px',
               }}
             >
-              <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              >
                 <Box>
-                  <Text style={{ fontSize: '16px', fontWeight: 'bold', color: isSungJinwooBusy() ? 'var(--text-secondary)' : 'var(--accent-gold)' }}>
+                  <Text
+                    style={{
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      color: isSungJinwooBusy() ? 'var(--text-secondary)' : 'var(--accent-gold)',
+                    }}
+                  >
                     ⚔️ Sung Jinwoo (Main Character)
                   </Text>
                   <Text style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
                     {isSungJinwooBusy() ? '🏰 Currently in a dungeon' : '✅ Available to lead'}
                   </Text>
                 </Box>
-                <Text style={{ fontSize: '12px', color: isSungJinwooBusy() ? 'var(--text-secondary)' : 'var(--accent-gold)', fontWeight: 'bold' }}>
+                <Text
+                  style={{
+                    fontSize: '12px',
+                    color: isSungJinwooBusy() ? 'var(--text-secondary)' : 'var(--accent-gold)',
+                    fontWeight: 'bold',
+                  }}
+                >
                   {isSungJinwooBusy() ? 'BUSY' : 'READY'}
                 </Text>
               </Box>
             </Box>
 
-            <Text style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '15px', fontStyle: 'italic' }}>
+            <Text
+              style={{
+                fontSize: '12px',
+                color: 'var(--text-secondary)',
+                marginBottom: '15px',
+                fontStyle: 'italic',
+              }}
+            >
               {isSungJinwooBusy()
                 ? '⚠️ Sung Jinwoo is busy. Select a named companion to lead this party.'
-                : 'Sung Jinwoo will lead if no named companions are selected.'
-              }
+                : 'Sung Jinwoo will lead if no named companions are selected.'}
             </Text>
 
-            <Text style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '10px' }}>
+            <Text
+              style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '10px' }}
+            >
               Party Size: {selectedParty.length} / {maxPartySlots} companions
             </Text>
-            <Text style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+            <Text
+              style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '20px' }}
+            >
               Authority: {authority} (Max Companion Slots: {maxPartySlots})
             </Text>
 
             {/* Available Companions */}
             {(() => {
               const availableCompanions = getAvailableCompanions(selectedDungeon);
-              const namedCompanions = availableCompanions.filter(c => c.originDungeonId !== 'recruited');
-              const genericCompanions = availableCompanions.filter(c => c.originDungeonId === 'recruited');
+              const namedCompanions = availableCompanions.filter(
+                (c) => c.originDungeonId !== 'recruited'
+              );
+              const genericCompanions = availableCompanions.filter(
+                (c) => c.originDungeonId === 'recruited'
+              );
 
               return (
                 <>
                   {/* Named Companions (Can Lead) */}
                   {namedCompanions.length > 0 && (
                     <>
-                      <Text style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--accent-gold)', marginBottom: '10px' }}>
-                        ⭐ Named {selectedDungeon.type === 'alliance' ? 'Allies' : 'Shadows'} (Can Lead)
+                      <Text
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                          color: 'var(--accent-gold)',
+                          marginBottom: '10px',
+                        }}
+                      >
+                        ⭐ Named {selectedDungeon.type === 'alliance' ? 'Allies' : 'Shadows'} (Can
+                        Lead)
                       </Text>
-                      <Box style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+                      <Box
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '10px',
+                          marginBottom: '20px',
+                        }}
+                      >
                         {namedCompanions.map((companion) => {
                           const isSelected = selectedParty.includes(companion.id);
                           const canSelect = isSelected || selectedParty.length < maxPartySlots;
@@ -472,7 +531,9 @@ export function DungeonsTab() {
                               onClick={() => canSelect && handleToggleCompanion(companion.id)}
                               style={{
                                 padding: '15px',
-                                background: isSelected ? 'var(--accent-gold)' : 'var(--bg-secondary)',
+                                background: isSelected
+                                  ? 'var(--accent-gold)'
+                                  : 'var(--bg-secondary)',
                                 border: `2px solid ${isSelected ? 'var(--accent-gold)' : 'var(--border-color)'}`,
                                 borderRadius: '8px',
                                 cursor: canSelect ? 'pointer' : 'not-allowed',
@@ -480,16 +541,39 @@ export function DungeonsTab() {
                                 transition: 'all 0.2s',
                               }}
                             >
-                              <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Box
+                                style={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                }}
+                              >
                                 <Box>
-                                  <Text style={{ fontSize: '16px', fontWeight: 'bold', color: isSelected ? '#000' : 'var(--text-primary)' }}>
+                                  <Text
+                                    style={{
+                                      fontSize: '16px',
+                                      fontWeight: 'bold',
+                                      color: isSelected ? '#000' : 'var(--text-primary)',
+                                    }}
+                                  >
                                     {isSelected ? '✓ ' : ''}⭐ {companion.name}
                                   </Text>
-                                  <Text style={{ fontSize: '14px', color: isSelected ? '#000' : 'var(--text-secondary)' }}>
+                                  <Text
+                                    style={{
+                                      fontSize: '14px',
+                                      color: isSelected ? '#000' : 'var(--text-secondary)',
+                                    }}
+                                  >
                                     Level {companion.level}
                                   </Text>
                                 </Box>
-                                <Text style={{ fontSize: '12px', color: isSelected ? '#000' : 'var(--accent-gold)', fontWeight: 'bold' }}>
+                                <Text
+                                  style={{
+                                    fontSize: '12px',
+                                    color: isSelected ? '#000' : 'var(--accent-gold)',
+                                    fontWeight: 'bold',
+                                  }}
+                                >
                                   LEADER
                                 </Text>
                               </Box>
@@ -503,10 +587,25 @@ export function DungeonsTab() {
                   {/* Generic Companions (Support Only) */}
                   {genericCompanions.length > 0 && (
                     <>
-                      <Text style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--accent-teal)', marginBottom: '10px' }}>
-                        🎯 Generic {selectedDungeon.type === 'alliance' ? 'Allies' : 'Shadows'} (Support)
+                      <Text
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 'bold',
+                          color: 'var(--accent-teal)',
+                          marginBottom: '10px',
+                        }}
+                      >
+                        🎯 Generic {selectedDungeon.type === 'alliance' ? 'Allies' : 'Shadows'}{' '}
+                        (Support)
                       </Text>
-                      <Box style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+                      <Box
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '10px',
+                          marginBottom: '20px',
+                        }}
+                      >
                         {genericCompanions.map((companion) => {
                           const isSelected = selectedParty.includes(companion.id);
                           const canSelect = isSelected || selectedParty.length < maxPartySlots;
@@ -517,7 +616,9 @@ export function DungeonsTab() {
                               onClick={() => canSelect && handleToggleCompanion(companion.id)}
                               style={{
                                 padding: '15px',
-                                background: isSelected ? 'var(--accent-teal)' : 'var(--bg-secondary)',
+                                background: isSelected
+                                  ? 'var(--accent-teal)'
+                                  : 'var(--bg-secondary)',
                                 border: `2px solid ${isSelected ? 'var(--accent-teal)' : 'var(--border-color)'}`,
                                 borderRadius: '8px',
                                 cursor: canSelect ? 'pointer' : 'not-allowed',
@@ -525,16 +626,40 @@ export function DungeonsTab() {
                                 transition: 'all 0.2s',
                               }}
                             >
-                              <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Box
+                                style={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                }}
+                              >
                                 <Box>
-                                  <Text style={{ fontSize: '16px', fontWeight: 'bold', color: isSelected ? '#000' : 'var(--text-primary)' }}>
-                                    {isSelected ? '✓ ' : ''}{companion.name}
+                                  <Text
+                                    style={{
+                                      fontSize: '16px',
+                                      fontWeight: 'bold',
+                                      color: isSelected ? '#000' : 'var(--text-primary)',
+                                    }}
+                                  >
+                                    {isSelected ? '✓ ' : ''}
+                                    {companion.name}
                                   </Text>
-                                  <Text style={{ fontSize: '14px', color: isSelected ? '#000' : 'var(--text-secondary)' }}>
+                                  <Text
+                                    style={{
+                                      fontSize: '14px',
+                                      color: isSelected ? '#000' : 'var(--text-secondary)',
+                                    }}
+                                  >
                                     Level {companion.level}
                                   </Text>
                                 </Box>
-                                <Text style={{ fontSize: '12px', color: isSelected ? '#000' : 'var(--accent-teal)', fontWeight: 'bold' }}>
+                                <Text
+                                  style={{
+                                    fontSize: '12px',
+                                    color: isSelected ? '#000' : 'var(--accent-teal)',
+                                    fontWeight: 'bold',
+                                  }}
+                                >
                                   SUPPORT
                                 </Text>
                               </Box>
@@ -558,10 +683,18 @@ export function DungeonsTab() {
                       }}
                     >
                       <Text style={{ color: 'var(--text-secondary)' }}>
-                        No {selectedDungeon.type === 'alliance' ? 'allies' : 'shadows'} available for this dungeon yet.
+                        No {selectedDungeon.type === 'alliance' ? 'allies' : 'shadows'} available
+                        for this dungeon yet.
                       </Text>
-                      <Text style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '10px' }}>
-                        Complete this dungeon to recruit {selectedDungeon.type === 'alliance' ? 'allies' : 'shadows'}!
+                      <Text
+                        style={{
+                          fontSize: '12px',
+                          color: 'var(--text-secondary)',
+                          marginTop: '10px',
+                        }}
+                      >
+                        Complete this dungeon to recruit{' '}
+                        {selectedDungeon.type === 'alliance' ? 'allies' : 'shadows'}!
                       </Text>
                     </Box>
                   )}
@@ -572,12 +705,12 @@ export function DungeonsTab() {
             {/* Action Buttons */}
             <Box style={{ display: 'flex', gap: '10px' }}>
               {(() => {
-                const namedInParty = selectedParty.filter(id => {
+                const namedInParty = selectedParty.filter((id) => {
                   if (selectedDungeon.type === 'alliance') {
-                    const ally = allies.find(a => a.id === id);
+                    const ally = allies.find((a) => a.id === id);
                     return ally && ally.originDungeonId !== 'recruited';
                   } else {
-                    const shadow = shadows.find(s => s.id === id);
+                    const shadow = shadows.find((s) => s.id === id);
                     return shadow && shadow.originDungeonId !== 'recruited';
                   }
                 });
@@ -591,9 +724,10 @@ export function DungeonsTab() {
                   if (!isSungJinwooAvailable) {
                     buttonText = '⚔️ Sung Jinwoo is Busy';
                   } else {
-                    buttonText = selectedParty.length === 0
-                      ? '⚔️ Start Solo (Sung Jinwoo)'
-                      : `⚔️ Sung Jinwoo + ${selectedParty.length} support`;
+                    buttonText =
+                      selectedParty.length === 0
+                        ? '⚔️ Start Solo (Sung Jinwoo)'
+                        : `⚔️ Sung Jinwoo + ${selectedParty.length} support`;
                   }
                 } else {
                   // Named companions lead
@@ -613,7 +747,9 @@ export function DungeonsTab() {
                       flex: 1,
                       background: hasValidLeader ? 'var(--accent-teal)' : 'var(--bg-tertiary)',
                       color: hasValidLeader ? '#000' : 'var(--text-dim)',
-                      border: hasValidLeader ? '1px solid var(--accent-teal)' : '1px solid var(--border-color)',
+                      border: hasValidLeader
+                        ? '1px solid var(--accent-teal)'
+                        : '1px solid var(--border-color)',
                       fontWeight: 'bold',
                       padding: '12px',
                     }}
@@ -642,4 +778,3 @@ export function DungeonsTab() {
     </Box>
   );
 }
-

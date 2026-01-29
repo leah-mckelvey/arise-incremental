@@ -12,8 +12,17 @@ export interface DungeonsState {
   activeDungeons: ActiveDungeon[]; // Changed to array for parallel runs
 
   // Actions
-  startDungeon: (dungeonId: string, currentTime: number, partyIds: string[], onSuccess: () => void) => void;
-  completeDungeon: (activeDungeonId: string, currentTime: number, onSuccess: (rewards: DungeonRewards, dungeonName: string, dungeon: Dungeon) => void) => void;
+  startDungeon: (
+    dungeonId: string,
+    currentTime: number,
+    partyIds: string[],
+    onSuccess: () => void
+  ) => void;
+  completeDungeon: (
+    activeDungeonId: string,
+    currentTime: number,
+    onSuccess: (rewards: DungeonRewards, dungeonName: string, dungeon: Dungeon) => void
+  ) => void;
   cancelDungeon: (activeDungeonId: string) => void;
   unlockDungeon: (dungeonId: string) => void;
   reset: () => void;
@@ -38,10 +47,13 @@ const loadPersistedState = (): Partial<DungeonsState> | null => {
 
 const persistState = (state: DungeonsState) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      dungeons: state.dungeons,
-      activeDungeons: state.activeDungeons,
-    }));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        dungeons: state.dungeons,
+        activeDungeons: state.activeDungeons,
+      })
+    );
   } catch (error) {
     console.error('Failed to persist dungeons state:', error);
   }
@@ -89,7 +101,9 @@ export const useDungeonsStore = createStore<DungeonsState>((set, get) => {
         partyIds,
       };
 
-      console.log(`🏰 Started dungeon: ${dungeon.name} (${dungeon.duration}s) with ${partyIds.length} companion(s)`);
+      console.log(
+        `🏰 Started dungeon: ${dungeon.name} (${dungeon.duration}s) with ${partyIds.length} companion(s)`
+      );
 
       set((state) => ({
         activeDungeons: [...state.activeDungeons, activeDungeon],
@@ -161,10 +175,7 @@ export const useDungeonsStore = createStore<DungeonsState>((set, get) => {
   return store;
 });
 
-// Subscribe to persist state changes (wrapped in setTimeout to avoid circular dependency)
-setTimeout(() => {
-  useDungeonsStore.subscribe((state) => {
-    persistState(state);
-  });
-}, 0);
-
+// Subscribe to persist state changes
+useDungeonsStore.subscribe((state) => {
+  persistState(state);
+});

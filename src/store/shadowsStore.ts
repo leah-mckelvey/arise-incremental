@@ -9,7 +9,7 @@ let shadowIdCounter = 0;
 export interface ShadowsState {
   shadows: Shadow[];
   necromancerUnlocked: boolean; // Unlocks at level 40
-  
+
   // Actions
   extractShadow: (name: string, dungeonId: string) => Shadow;
   addXpToShadow: (shadowId: string, xp: number, onLevelUp?: (newLevel: number) => void) => void;
@@ -37,10 +37,13 @@ const loadPersistedState = (): Partial<ShadowsState> | null => {
 
 const persistState = (state: ShadowsState) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      shadows: state.shadows,
-      necromancerUnlocked: state.necromancerUnlocked,
-    }));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        shadows: state.shadows,
+        necromancerUnlocked: state.necromancerUnlocked,
+      })
+    );
   } catch (error) {
     console.error('Failed to persist shadows state:', error);
   }
@@ -102,7 +105,7 @@ export const useShadowsStore = createStore<ShadowsState>((set, get) => {
           shadow.xp -= shadow.xpToNextLevel;
           shadow.level += 1;
           shadow.xpToNextLevel = calculateXpToNextLevel(shadow.level);
-          
+
           console.log(`⭐ ${shadow.name} leveled up to ${shadow.level}!`);
           if (onLevelUp) {
             onLevelUp(shadow.level);
@@ -133,10 +136,7 @@ export const useShadowsStore = createStore<ShadowsState>((set, get) => {
   return store;
 });
 
-// Subscribe to persist state changes (wrapped in setTimeout to avoid circular dependency)
-setTimeout(() => {
-  useShadowsStore.subscribe((state) => {
-    persistState(state);
-  });
-}, 0);
-
+// Subscribe to persist state changes
+useShadowsStore.subscribe((state) => {
+  persistState(state);
+});

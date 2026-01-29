@@ -70,11 +70,15 @@ describe('buildingsStore', () => {
       const resources = createResources({ essence: 100 });
       let purchaseSucceeded = false;
 
-      useBuildingsStore.getState().purchaseBuilding('essenceExtractor', () => resources, (cost, newBuildings) => {
-        purchaseSucceeded = true;
-        expect(newBuildings.essenceExtractor.count).toBe(1);
-        expect(cost.essence).toBe(10);
-      });
+      useBuildingsStore.getState().purchaseBuilding(
+        'essenceExtractor',
+        () => resources,
+        (cost, newBuildings) => {
+          purchaseSucceeded = true;
+          expect(newBuildings.essenceExtractor.count).toBe(1);
+          expect(cost.essence).toBe(10);
+        }
+      );
 
       expect(purchaseSucceeded).toBe(true);
       expect(useBuildingsStore.getState().buildings.essenceExtractor.count).toBe(1);
@@ -84,9 +88,13 @@ describe('buildingsStore', () => {
       const resources = createResources({ essence: 5 });
       let callbackCalled = false;
 
-      useBuildingsStore.getState().purchaseBuilding('essenceExtractor', () => resources, () => {
-        callbackCalled = true;
-      });
+      useBuildingsStore.getState().purchaseBuilding(
+        'essenceExtractor',
+        () => resources,
+        () => {
+          callbackCalled = true;
+        }
+      );
 
       expect(callbackCalled).toBe(false);
       expect(useBuildingsStore.getState().buildings.essenceExtractor.count).toBe(0);
@@ -96,9 +104,13 @@ describe('buildingsStore', () => {
       const resources = createResources({ essence: 1000 });
       let callbackCalled = false;
 
-      useBuildingsStore.getState().purchaseBuilding('invalidBuilding', () => resources, () => {
-        callbackCalled = true;
-      });
+      useBuildingsStore.getState().purchaseBuilding(
+        'invalidBuilding',
+        () => resources,
+        () => {
+          callbackCalled = true;
+        }
+      );
 
       expect(callbackCalled).toBe(false);
     });
@@ -108,19 +120,31 @@ describe('buildingsStore', () => {
       const costs: number[] = [];
 
       // First purchase
-      useBuildingsStore.getState().purchaseBuilding('essenceExtractor', () => resources, (cost) => {
-        costs.push(cost.essence);
-      });
+      useBuildingsStore.getState().purchaseBuilding(
+        'essenceExtractor',
+        () => resources,
+        (cost) => {
+          costs.push(cost.essence);
+        }
+      );
 
       // Second purchase
-      useBuildingsStore.getState().purchaseBuilding('essenceExtractor', () => resources, (cost) => {
-        costs.push(cost.essence);
-      });
+      useBuildingsStore.getState().purchaseBuilding(
+        'essenceExtractor',
+        () => resources,
+        (cost) => {
+          costs.push(cost.essence);
+        }
+      );
 
       // Third purchase
-      useBuildingsStore.getState().purchaseBuilding('essenceExtractor', () => resources, (cost) => {
-        costs.push(cost.essence);
-      });
+      useBuildingsStore.getState().purchaseBuilding(
+        'essenceExtractor',
+        () => resources,
+        (cost) => {
+          costs.push(cost.essence);
+        }
+      );
 
       expect(costs).toEqual([10, 11, 13]);
       expect(useBuildingsStore.getState().buildings.essenceExtractor.count).toBe(3);
@@ -149,4 +173,3 @@ describe('buildingsStore', () => {
     });
   });
 });
-

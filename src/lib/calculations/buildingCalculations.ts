@@ -47,4 +47,3 @@ export const deductCost = (resources: Resources, cost: Resources): Resources => 
     knowledge: resources.knowledge - cost.knowledge,
   };
 };
-

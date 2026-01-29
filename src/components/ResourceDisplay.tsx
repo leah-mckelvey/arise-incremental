@@ -1,10 +1,21 @@
 import { useState } from 'react';
 import { useStore } from '@ts-query/react';
-import { useResourcesQuery, useAllResourceRatesQuery, useResourceCapsQuery, useBuildingsQuery, useResearchQuery, useHunterQuery } from '../queries/gameQueries';
+import {
+  useResourcesQuery,
+  useAllResourceRatesQuery,
+  useResourceCapsQuery,
+  useBuildingsQuery,
+  useResearchQuery,
+  useHunterQuery,
+} from '../queries/gameQueries';
 import { Box, Heading, Text, Stack } from '@ts-query/ui-react';
 import type { Resources } from '../store/gameStore';
 import { getEffectiveHunterStats, useArtifactsStore } from '../store/gameStore';
-import { calculateBuildingEfficiency, calculateBuildingSynergy, calculateGlobalProductionMultiplier } from '../lib/calculations/resourceCalculations';
+import {
+  calculateBuildingEfficiency,
+  calculateBuildingSynergy,
+  calculateGlobalProductionMultiplier,
+} from '../lib/calculations/resourceCalculations';
 
 export const ResourceDisplay = () => {
   const { data: resources } = useResourcesQuery();
@@ -60,22 +71,29 @@ export const ResourceDisplay = () => {
 
         // Apply hunter stat bonuses
         if (resourceKey === 'essence') {
-          production *= (1 + effectiveStats.strength / 200);
+          production *= 1 + effectiveStats.strength / 200;
         } else if (resourceKey === 'crystals') {
-          production *= (1 + effectiveStats.sense / 200);
+          production *= 1 + effectiveStats.sense / 200;
         } else if (resourceKey === 'gold') {
-          production *= (1 + effectiveStats.agility / 200);
+          production *= 1 + effectiveStats.agility / 200;
         } else if (resourceKey === 'souls') {
-          production *= (1 + effectiveStats.vitality / 200);
+          production *= 1 + effectiveStats.vitality / 200;
         } else if (resourceKey === 'knowledge') {
-          production *= (1 + effectiveStats.intelligence / 200);
+          production *= 1 + effectiveStats.intelligence / 200;
         } else {
-          const avgStat = (effectiveStats.strength + effectiveStats.agility + effectiveStats.intelligence + effectiveStats.vitality + effectiveStats.sense) / 5;
-          production *= (1 + avgStat / 200);
+          const avgStat =
+            (effectiveStats.strength +
+              effectiveStats.agility +
+              effectiveStats.intelligence +
+              effectiveStats.vitality +
+              effectiveStats.sense) /
+            5;
+          production *= 1 + avgStat / 200;
         }
 
         const bonusMultiplier = production / beforeBonuses;
-        const details = bonusMultiplier > 1.01 ? `(×${bonusMultiplier.toFixed(2)} from bonuses)` : '';
+        const details =
+          bonusMultiplier > 1.01 ? `(×${bonusMultiplier.toFixed(2)} from bonuses)` : '';
 
         breakdown.push({
           source: `${building.name} (${building.count})`,
@@ -114,7 +132,10 @@ export const ResourceDisplay = () => {
         maxWidth: '280px',
       }}
     >
-      <Heading level={4} style={{ marginBottom: '12px', color: 'var(--accent-teal)', fontSize: '16px' }}>
+      <Heading
+        level={4}
+        style={{ marginBottom: '12px', color: 'var(--accent-teal)', fontSize: '16px' }}
+      >
         💎 Resources
       </Heading>
       <Stack gap={1.5}>
@@ -140,8 +161,19 @@ export const ResourceDisplay = () => {
                 }}
                 onClick={() => rate > 0 && setExpandedResource(isExpanded ? null : key)}
               >
-                <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <Text fontSize="13px" fontWeight="bold" style={{ color: 'var(--text-secondary)' }}>
+                <Box
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '4px',
+                  }}
+                >
+                  <Text
+                    fontSize="13px"
+                    fontWeight="bold"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
                     {icon} {name} {rate > 0 && (isExpanded ? '▼' : '▶')}
                   </Text>
                   {rate > 0 && (
@@ -150,7 +182,13 @@ export const ResourceDisplay = () => {
                     </Text>
                   )}
                 </Box>
-                <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <Box
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                  }}
+                >
                   <Text
                     fontSize="16px"
                     fontWeight="bold"
@@ -179,12 +217,23 @@ export const ResourceDisplay = () => {
                     marginTop: '4px',
                   }}
                 >
-                  <Text fontSize="11px" fontWeight="bold" style={{ color: 'var(--accent-teal)', marginBottom: '6px' }}>
+                  <Text
+                    fontSize="11px"
+                    fontWeight="bold"
+                    style={{ color: 'var(--accent-teal)', marginBottom: '6px' }}
+                  >
                     Production Breakdown:
                   </Text>
                   <Stack gap={1}>
                     {breakdown.map((item, idx) => (
-                      <Box key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
                         <Text fontSize="10px" style={{ color: 'var(--text-secondary)' }}>
                           {item.source}
                         </Text>
@@ -200,12 +249,26 @@ export const ResourceDisplay = () => {
                         </Box>
                       </Box>
                     ))}
-                    <Box style={{ borderTop: '1px solid var(--border-color)', paddingTop: '4px', marginTop: '4px' }}>
+                    <Box
+                      style={{
+                        borderTop: '1px solid var(--border-color)',
+                        paddingTop: '4px',
+                        marginTop: '4px',
+                      }}
+                    >
                       <Box style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Text fontSize="11px" fontWeight="bold" style={{ color: 'var(--text-primary)' }}>
+                        <Text
+                          fontSize="11px"
+                          fontWeight="bold"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
                           Total:
                         </Text>
-                        <Text fontSize="11px" fontWeight="bold" style={{ color: 'var(--accent-teal)' }}>
+                        <Text
+                          fontSize="11px"
+                          fontWeight="bold"
+                          style={{ color: 'var(--accent-teal)' }}
+                        >
                           {formatRate(rate)}
                         </Text>
                       </Box>

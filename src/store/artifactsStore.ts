@@ -1,8 +1,28 @@
 import { createStore } from '@ts-query/core';
-import type { Artifact, ArtifactSlot, ArtifactRank, EquippedArtifacts, Resources, ArtifactUpgrade } from './types';
-import { createInitialEquippedArtifacts, availableUpgrades, calculateUpgradeCost, calculateUpgradeBlacksmithXpCost } from '../data/initialArtifacts';
-import { calculateCraftCost, calculateBlacksmithXpToNextLevel } from '../lib/calculations/artifactCalculations';
-import { rollTier, rollStats, generateArtifactName, getTierMaxUpgrades } from '../lib/lootGenerator';
+import type {
+  Artifact,
+  ArtifactSlot,
+  ArtifactRank,
+  EquippedArtifacts,
+  Resources,
+  ArtifactUpgrade,
+} from './types';
+import {
+  createInitialEquippedArtifacts,
+  availableUpgrades,
+  calculateUpgradeCost,
+  calculateUpgradeBlacksmithXpCost,
+} from '../data/initialArtifacts';
+import {
+  calculateCraftCost,
+  calculateBlacksmithXpToNextLevel,
+} from '../lib/calculations/artifactCalculations';
+import {
+  rollTier,
+  rollStats,
+  generateArtifactName,
+  getTierMaxUpgrades,
+} from '../lib/lootGenerator';
 
 const STORAGE_KEY = 'arise-artifacts-state';
 
@@ -17,12 +37,25 @@ export interface ArtifactsState {
   blacksmithXpToNextLevel: number;
 
   // Actions
-  craftArtifact: (rank: ArtifactRank, slot: ArtifactSlot, resources: Resources, onSuccess: (cost: Resources, newArtifact: Artifact) => void) => void;
+  craftArtifact: (
+    rank: ArtifactRank,
+    slot: ArtifactSlot,
+    resources: Resources,
+    onSuccess: (cost: Resources, newArtifact: Artifact) => void
+  ) => void;
   equipArtifact: (artifact: Artifact) => void;
   unequipArtifact: (slot: ArtifactSlot) => void;
-  upgradeArtifact: (artifactId: string, upgradeId: string, resources: Resources, onSuccess: (cost: Resources, blacksmithXpGain: number) => void) => void;
+  upgradeArtifact: (
+    artifactId: string,
+    upgradeId: string,
+    resources: Resources,
+    onSuccess: (cost: Resources, blacksmithXpGain: number) => void
+  ) => void;
   destroyArtifact: (artifactId: string, onSuccess: (essenceGain: number) => void) => void;
-  destroyArtifactsUnderRank: (maxRank: ArtifactRank, onSuccess: (essenceGain: number, count: number) => void) => void;
+  destroyArtifactsUnderRank: (
+    maxRank: ArtifactRank,
+    onSuccess: (essenceGain: number, count: number) => void
+  ) => void;
   addBlacksmithXp: (xp: number, onLevelUp?: (newLevel: number) => void) => void;
   reset: () => void;
 }
@@ -49,13 +82,16 @@ const loadPersistedState = (): Partial<ArtifactsState> | null => {
 
 const persistState = (state: ArtifactsState) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      equipped: state.equipped,
-      inventory: state.inventory,
-      blacksmithLevel: state.blacksmithLevel,
-      blacksmithXp: state.blacksmithXp,
-      blacksmithXpToNextLevel: state.blacksmithXpToNextLevel,
-    }));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        equipped: state.equipped,
+        inventory: state.inventory,
+        blacksmithLevel: state.blacksmithLevel,
+        blacksmithXp: state.blacksmithXp,
+        blacksmithXpToNextLevel: state.blacksmithXpToNextLevel,
+      })
+    );
   } catch (error) {
     console.error('Failed to persist artifacts state:', error);
   }
@@ -122,7 +158,7 @@ export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
       set((state) => {
         // Remove from inventory
         const newInventory = state.inventory.filter((a) => a.id !== artifact.id);
-        
+
         // Unequip current item in slot if exists
         const currentlyEquipped = state.equipped[artifact.slot];
         if (currentlyEquipped) {
@@ -185,7 +221,10 @@ export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
       }
 
       const cost = calculateUpgradeCost(artifact.rank, artifact.upgrades.length);
-      const blacksmithXpGain = calculateUpgradeBlacksmithXpCost(artifact.rank, artifact.upgrades.length);
+      const blacksmithXpGain = calculateUpgradeBlacksmithXpCost(
+        artifact.rank,
+        artifact.upgrades.length
+      );
 
       // Check affordability (only resources, not XP - upgrades GIVE XP!)
       const canAfford = (Object.keys(cost) as Array<keyof Resources>).every(
@@ -210,7 +249,9 @@ export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
         upgrades: [...artifact.upgrades, newUpgrade],
       };
 
-      console.log(`⚒️ Upgraded ${artifact.name} with ${upgradeTemplate.name} (+${blacksmithXpGain} blacksmith XP)`);
+      console.log(
+        `⚒️ Upgraded ${artifact.name} with ${upgradeTemplate.name} (+${blacksmithXpGain} blacksmith XP)`
+      );
 
       if (isEquipped) {
         set((state) => ({
@@ -318,7 +359,9 @@ export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
         totalEssence += Math.floor(baseEssence * tierMult + upgradeBonus);
       });
 
-      console.log(`💥 Destroyed ${artifactsToDestroy.length} artifacts (≤${maxRank}-Rank) for ${totalEssence} essence`);
+      console.log(
+        `💥 Destroyed ${artifactsToDestroy.length} artifacts (≤${maxRank}-Rank) for ${totalEssence} essence`
+      );
 
       set((state) => ({
         inventory: state.inventory.filter((artifact) => {
@@ -365,4 +408,3 @@ export const useArtifactsStore = createStore<ArtifactsState>((set, get) => {
 useArtifactsStore.subscribe((state) => {
   persistState(state);
 });
-
