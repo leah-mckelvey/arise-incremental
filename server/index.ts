@@ -1,8 +1,7 @@
-import dotenv from 'dotenv';
-import { createApp } from './app.js';
+// Load environment variables BEFORE any other imports
+import 'dotenv/config';
 
-// Load environment variables
-dotenv.config();
+import { createApp } from './app.js';
 
 const app = createApp();
 const PORT = process.env.PORT || 3001;

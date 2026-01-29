@@ -7,6 +7,7 @@ import { type AuthRequest } from '../../middleware/auth.js';
 import { initialBuildings } from '../../data/initialBuildings.js';
 import type { TransactionResponse, GameStateDTO } from '../../../shared/types.js';
 import { getDb, checkIdempotency } from './utils/index.js';
+import { BASE_RESOURCE_CAPS } from '../../lib/gameLogic.js';
 
 export const adminRouter = Router();
 
@@ -92,21 +93,63 @@ adminRouter.post('/reset', async (req: AuthRequest, res) => {
 
     await queryClient.invalidateQueries(['gameState', userId]);
 
+    // Build full state DTO from reset values
+    const stateDTO: GameStateDTO = {
+      version: 1,
+      resources: {
+        essence: 0,
+        crystals: 0,
+        gold: 0,
+        souls: 0,
+        attraction: 0,
+        gems: 0,
+        knowledge: 0,
+      },
+      resourceCaps: { ...BASE_RESOURCE_CAPS },
+      hunter: {
+        level: 1,
+        xp: 0,
+        xpToNextLevel: 100,
+        rank: 'E',
+        statPoints: 0,
+        hp: 100,
+        maxHp: 100,
+        mana: 50,
+        maxMana: 50,
+        stats: {
+          strength: 10,
+          agility: 10,
+          intelligence: 10,
+          vitality: 10,
+          sense: 10,
+          authority: 10,
+        },
+      },
+      buildings: initialBuildings,
+      artifacts: {
+        equipped: {},
+        inventory: [],
+        blacksmithLevel: 1,
+        blacksmithXp: 0,
+      },
+      dungeons: [],
+      activeDungeons: [],
+      allies: [],
+      shadows: [],
+      research: {},
+      lastUpdate: now.getTime(),
+    };
+
     await db.insert(transactions).values({
       id: randomUUID(),
       userId,
       clientTxId,
       type: 'reset',
       payload: {},
-      stateAfter: {} as unknown as GameStateDTO,
+      stateAfter: stateDTO,
     });
 
-    const response: TransactionResponse = {
-      success: true,
-      state: {} as unknown as GameStateDTO, // Frontend will reload full state
-    };
-
-    res.json(response);
+    res.json({ success: true, state: stateDTO } as TransactionResponse);
   } catch (error) {
     console.error('Error resetting game:', error);
     res.status(500).json({ error: 'Failed to reset game' });

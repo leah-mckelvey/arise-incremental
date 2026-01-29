@@ -10,7 +10,13 @@ import type {
   TransactionResponse,
   GameStateDTO,
 } from '../../../shared/types.js';
-import { getDb, checkIdempotency, applyPassiveIncomeToGameState } from './utils/index.js';
+import {
+  getDb,
+  checkIdempotency,
+  applyPassiveIncomeToGameState,
+  extractResourceCaps,
+  transformToGameStateDTO,
+} from './utils/index.js';
 
 export const hunterRouter = Router();
 
@@ -109,21 +115,24 @@ hunterRouter.post('/allocate-stat', async (req: AuthRequest, res) => {
 
     await queryClient.invalidateQueries(['gameState', userId]);
 
+    const resourceCaps = extractResourceCaps(gameState);
+    const stateDTO: GameStateDTO = transformToGameStateDTO(
+      gameState,
+      currentResources,
+      resourceCaps,
+      { hunter: newHunter, lastUpdate: now.getTime() }
+    );
+
     await db.insert(transactions).values({
       id: randomUUID(),
       userId,
       clientTxId,
       type: 'allocate_stat',
       payload: { stat },
-      stateAfter: { hunter: newHunter } as unknown as GameStateDTO,
+      stateAfter: stateDTO,
     });
 
-    const response: TransactionResponse = {
-      success: true,
-      state: { hunter: newHunter } as unknown as GameStateDTO,
-    };
-
-    res.json(response);
+    res.json({ success: true, state: stateDTO } as TransactionResponse);
   } catch (error) {
     console.error('Error allocating stat:', error);
     res.status(500).json({ error: 'Failed to allocate stat' });

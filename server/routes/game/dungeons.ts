@@ -15,7 +15,13 @@ import type {
   Dungeon,
   ActiveDungeon,
 } from '../../../shared/types.js';
-import { getDb, checkIdempotency, applyPassiveIncomeToGameState } from './utils/index.js';
+import {
+  getDb,
+  checkIdempotency,
+  applyPassiveIncomeToGameState,
+  extractResourceCaps,
+  transformToGameStateDTO,
+} from './utils/index.js';
 
 export const dungeonsRouter = Router();
 
@@ -101,25 +107,24 @@ dungeonsRouter.post('/start-dungeon', async (req: AuthRequest, res) => {
 
     await queryClient.invalidateQueries(['gameState', userId]);
 
+    const resourceCaps = extractResourceCaps(gameState);
+    const stateDTO: GameStateDTO = transformToGameStateDTO(
+      gameState,
+      currentResources,
+      resourceCaps,
+      { activeDungeons: newActiveDungeons, lastUpdate: nowDate.getTime() }
+    );
+
     await db.insert(transactions).values({
       id: randomUUID(),
       userId,
       clientTxId,
       type: 'start_dungeon',
       payload: { dungeonId, partyIds },
-      stateAfter: {
-        resources: currentResources,
-        activeDungeons: newActiveDungeons,
-      } as unknown as GameStateDTO,
+      stateAfter: stateDTO,
     });
 
-    res.json({
-      success: true,
-      state: {
-        resources: currentResources,
-        activeDungeons: newActiveDungeons,
-      } as unknown as GameStateDTO,
-    } as TransactionResponse);
+    res.json({ success: true, state: stateDTO } as TransactionResponse);
   } catch (error) {
     console.error('Error starting dungeon:', error);
     res.status(500).json({ error: 'Failed to start dungeon' });
@@ -240,27 +245,23 @@ dungeonsRouter.post('/complete-dungeon', async (req: AuthRequest, res) => {
 
     await queryClient.invalidateQueries(['gameState', userId]);
 
+    const stateDTO: GameStateDTO = transformToGameStateDTO(
+      gameState,
+      cappedResources,
+      resourceCaps,
+      { hunter: newHunter, activeDungeons: newActiveDungeons, lastUpdate: Date.now() }
+    );
+
     await db.insert(transactions).values({
       id: randomUUID(),
       userId,
       clientTxId,
       type: 'complete_dungeon',
       payload: { activeDungeonId, rewards },
-      stateAfter: {
-        resources: cappedResources,
-        hunter: newHunter,
-        activeDungeons: newActiveDungeons,
-      } as unknown as GameStateDTO,
+      stateAfter: stateDTO,
     });
 
-    res.json({
-      success: true,
-      state: {
-        resources: cappedResources,
-        hunter: newHunter,
-        activeDungeons: newActiveDungeons,
-      } as unknown as GameStateDTO,
-    } as TransactionResponse);
+    res.json({ success: true, state: stateDTO } as TransactionResponse);
   } catch (error) {
     console.error('Error completing dungeon:', error);
     res.status(500).json({ error: 'Failed to complete dungeon' });
@@ -327,25 +328,24 @@ dungeonsRouter.post('/cancel-dungeon', async (req: AuthRequest, res) => {
 
     await queryClient.invalidateQueries(['gameState', userId]);
 
+    const resourceCaps = extractResourceCaps(gameState);
+    const stateDTO: GameStateDTO = transformToGameStateDTO(
+      gameState,
+      currentResources,
+      resourceCaps,
+      { activeDungeons: newActiveDungeons, lastUpdate: nowDate.getTime() }
+    );
+
     await db.insert(transactions).values({
       id: randomUUID(),
       userId,
       clientTxId,
       type: 'cancel_dungeon',
       payload: { activeDungeonId },
-      stateAfter: {
-        resources: currentResources,
-        activeDungeons: newActiveDungeons,
-      } as unknown as GameStateDTO,
+      stateAfter: stateDTO,
     });
 
-    res.json({
-      success: true,
-      state: {
-        resources: currentResources,
-        activeDungeons: newActiveDungeons,
-      } as unknown as GameStateDTO,
-    } as TransactionResponse);
+    res.json({ success: true, state: stateDTO } as TransactionResponse);
   } catch (error) {
     console.error('Error canceling dungeon:', error);
     res.status(500).json({ error: 'Failed to cancel dungeon' });
