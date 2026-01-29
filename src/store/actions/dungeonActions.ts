@@ -64,6 +64,13 @@ export const cancelDungeon = async (activeDungeonId: string) => {
   // Store previous state for rollback
   const previousActiveDungeons = useDungeonsStore.getState().activeDungeons;
 
+  // Check if the dungeon is actually active locally before proceeding
+  const dungeonExists = previousActiveDungeons.some((ad) => ad.id === activeDungeonId);
+  if (!dungeonExists) {
+    // Nothing to cancel - dungeon not active (race condition / double-click)
+    return;
+  }
+
   // Optimistic update
   useDungeonsStore.getState().cancelDungeon(activeDungeonId);
 
@@ -138,8 +145,9 @@ const completeDungeonWithApi = async (activeDungeonId: string) => {
   // Store previous state for rollback
   // processRewards can modify: resources, resourceCaps (via handleLevelUp), hunter,
   // dungeon unlocks, necromancer unlock, allies (XP + drops), shadows (XP + drops)
+  // Deep copy dungeons array since unlockDungeon() mutates dungeon objects in-place
   const previousActiveDungeons = useDungeonsStore.getState().activeDungeons;
-  const previousDungeons = useDungeonsStore.getState().dungeons;
+  const previousDungeons = useDungeonsStore.getState().dungeons.map((d) => ({ ...d }));
   const previousResources = gameStore.getState().resources;
   const previousResourceCaps = gameStore.getState().resourceCaps;
   const previousHunter = useHunterStore.getState().hunter;
