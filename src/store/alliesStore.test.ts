@@ -173,7 +173,7 @@ describe('alliesStore', () => {
       expect(forestAllies).toEqual([]);
     });
 
-    it('should not include generic recruited allies in dungeon filtering', () => {
+    it('should filter generic allies by their "recruited" origin', () => {
       useAlliesStore.getState().recruitGenericAlly('Soldier', 'E-Rank');
       useAlliesStore.getState().recruitAlly('Igris', 'dungeon-castle');
 

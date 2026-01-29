@@ -38,8 +38,7 @@ describe('shadowsStore', () => {
       it('should return null when necromancer is not unlocked', () => {
         const shadow = useShadowsStore.getState().extractShadow('Igris', 'dungeon-castle');
 
-        // The current implementation returns {} as Shadow, which is a bug
-        // The test expects null to define the correct behavior
+        // extractShadow should return null when the necromancer is locked
         expect(shadow).toBeNull();
       });
 
