@@ -32,6 +32,11 @@ export const recruitGenericAlly = async (name: string, rank: string, attractionC
   const previousAllies = useAlliesStore.getState().allies;
 
   // Optimistic update - deduct attraction and recruit ally
+  // TODO(PR#6): Optimistic ally recruitment creates client-side ID/name (e.g., "Shadow Soldier #3").
+  // syncServerState() replaces allies array with server-generated IDs/names. If the player selects
+  // the new ally into partyIds before the API returns, those references can become invalid after sync.
+  // Potential fixes: 1) Use server-assigned IDs only (wait for API), 2) Reconcile client/server IDs,
+  // 3) Use temporary IDs that get mapped after sync.
   gameStore.getState().addResource('attraction', -attractionCost);
   useAlliesStore.getState().recruitGenericAlly(name, rank);
 
@@ -89,6 +94,22 @@ export const extractShadowManual = async (name: string, dungeonId: string, souls
         'Not enough souls to extract this shadow.',
         undefined,
         5000
+      );
+    return;
+  }
+
+  // Check if shadow already exists BEFORE deducting souls (prevents double-extraction race condition)
+  // PR #6 Review: extractShadow returns existing shadow if name matches, but we'd have already deducted souls
+  const existingShadow = useShadowsStore.getState().shadows.find((s) => s.name === name);
+  if (existingShadow) {
+    useNotificationsStore
+      .getState()
+      .addNotification(
+        'info',
+        'Shadow Already Extracted',
+        `${name} has already been extracted.`,
+        undefined,
+        3000
       );
     return;
   }

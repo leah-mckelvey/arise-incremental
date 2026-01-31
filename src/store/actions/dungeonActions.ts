@@ -190,6 +190,11 @@ const completeDungeonWithApi = async (activeDungeonId: string) => {
     // Call backend API to complete dungeon
     const response = await gameApi.completeDungeon(activeDungeonId);
     // Success - sync server state (resources, hunter, activeDungeons)
+    // TODO(PR#6): processRewards() applies multipliers, grants resources (including non-gold/essence/crystal),
+    // adds companion XP, and applies drops locally. syncServerState() will overwrite those with whatever
+    // the server returns. If the backend /complete-dungeon response doesn't apply the same reward logic,
+    // the player will lose/roll back locally-applied rewards after sync. Ensure backend reward calculation
+    // matches frontend, or apply rewards server-side only (remove optimistic reward application).
     syncServerState(response.state);
     console.log('✅ Dungeon completion synced with server');
   } catch (error) {
